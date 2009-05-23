@@ -52,14 +52,20 @@ class Direntry:
     return self.name
     return self.name.replace('/','\\')
 
-class fuseBase:
 
-  def __init__(self):
+fuse_python_api = None
+
+class fuseBase:
+  fusage = 'no usage currently'
+  def __init__(self, usage = '', dash_s_do = '', version = ''):
     #The following is used to be compitable with Linux Fuse Python binding
     self.flags = 0
     self.multithreaded = 0
     self.allow_other = 0
-
+    
+  def parse(self, errex = 0):
+    pass
+  
   '''
   The following functions are interface function defined in dokan.
   '''

@@ -9,7 +9,7 @@ import win32file
 import stat
 import errno
 import os
-
+__version__ = '0.1'
 # functions
 def whoami():
     return inspect.stack()[1][3]
@@ -48,7 +48,7 @@ class Fuse(fuseBase):
   def setDirFlag(pInfo):
     pInfo.IsDirectory = 1
   def CreateFileFunc(self, FileName, DesiredAccess, ShareMode, CreationDisposition, FlagsAndAttributes, pInfo):
-    dbgP(FileName,DesiredAccess,ShareMode,CreationDisposition,FlagsAndAttributes, pInfo)
+    #dbgP(FileName,DesiredAccess,ShareMode,CreationDisposition,FlagsAndAttributes, pInfo)
     unixFilename = FileName.replace('\\','/')
     if FileName == '\\':
       self.setDirFlag()
@@ -74,7 +74,7 @@ class Fuse(fuseBase):
     return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
   
   def ReadFileFunc(self, FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo):
-    dbgP(FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo)
+    #dbgP(FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo)
     unixFilename = FileName.replace('\\','/')
     data = self.read(unixFilename, NumberOfBytesToRead, Offset)
     if data == -errno.ENOENT:
