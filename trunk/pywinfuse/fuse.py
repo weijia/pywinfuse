@@ -126,6 +126,7 @@ class Fuse(fuseBase):
       print 'attr',Buffer.dwFileAttributes
       print 'size',Buffer.nFileSizeLow
       '''
+      #Some quick hack of setting ctypes
       setDwordByPoint(Buffer, self.translateModeFromUnix(st))
       setDwordByPoint(Buffer+32, st.st_size>>32)#('nFileSizeHigh', DWORD),
       setDwordByPoint(Buffer+36, st.st_size&0xffffffff)#('nFileSizeLow', DWORD),
