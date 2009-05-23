@@ -1,7 +1,7 @@
 from ctypes import *
 from dokan import *
 #from myLogger import *
-
+from tools import *
 import inspect
 # functions
 def whoami():
@@ -137,53 +137,7 @@ def CloseFileFunc(pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
   dbg()
   return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
 
-def setDwordPoint(valueAddress, value):
-  i = 0
-  while i < 4:
-    memset(valueAddress+i, value&0xff, 1)
-    i += 1
-    value >>= 8
 
-
-
-'''
-print 'buffer addr:',byref(Buffer)
-if FileName != '\\hello.txt':
-return -2
-print '--------------------------------------------------------reading'
-'''
-'''
-if len(data) < Offset + NumberOfBytesToRead:
-memmove(addressof(data[Offset:]), Buffer)
-NumberOfBytesRead = len(data)-Offset
-else:
-#Buffer.contents.raw = data[Offset, NumberOfBytesToRead]
-memmove(addressof(data[Offset,NumberOfBytesToRead]), Buffer)
-NumberOfBytesRead = NumberOfBytesToRead
-print NumberOfBytesRead
-print Buffer.contents.raw
-print '--------------------------------------------------------reading'
-
-#memset(Buffer,c_char('c'),5)
-
-s = "Hello, World"
-c_s = c_char_p(s)
-print 'buffer addr:',byref(Buffer)
-memmove(Buffer,c_s,5)
-print Buffer
-print c_s
-print string_at(Buffer)
-print 'buffer addr:',byref(Buffer)
-return 0
-pb = cast(Buffer, c_void_p)
-pb.value = 'good'
-#NumberOfBytesRead.value = 11
-#print byref(NumberOfBytesRead)
-#print NumberOfBytesRead.value
-real = 11
-#memmove(NumberOfBytesRead, addressof(real), 4)
-#memset(NumberOfBytesRead, 0, 4)
-'''
 
 def ReadFileFunc(FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo):
   dbgP(FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo)
@@ -191,21 +145,21 @@ def ReadFileFunc(FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offse
   print type(Buffer)
   if Offset > len(data):
     #Read from behind the data
-    setDwordPoint(NumberOfBytesRead, 0)
+    setDwordByPoint(NumberOfBytesRead, 0)
     return 0
   if len(data) < Offset + NumberOfBytesToRead:
     #Read end exceed data
     memmove(Buffer, data[Offset:], len(data)-Offset)
     r = len(data)-Offset
-    setDwordPoint(NumberOfBytesRead, r)
+    setDwordByPoint(NumberOfBytesRead, r)
   else:
     memmove(Buffer, data, NumberOfBytesToRead)
     r = NumberOfBytesToRead
-    setDwordPoint(NumberOfBytesRead, r)
+    setDwordByPoint(NumberOfBytesRead, r)
   memmove(Buffer, data, 4)
   print string_at(Buffer)
   real = 11
-  setDwordPoint(NumberOfBytesRead, real)
+  setDwordByPoint(NumberOfBytesRead, real)
   return 0# WINFUNCTYPE(c_int, LPCWSTR, LPVOID, DWORD, LPDWORD, LONGLONG, PDOKAN_FILE_INFO)),
 
 
@@ -292,29 +246,25 @@ def LockFileFunc(pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
 def UnlockFileFunc(pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
   dbg()
   return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),
-def GetDiskFreeSpaceFunc(  FreeBytesAvailable, TotalNumberOfBytes, TotalNumberOfFreeBytes, pInfo):
+def GetDiskFreeSpaceFunc(pFreeBytesAvailable, pTotalNumberOfBytes, pTotalNumberOfFreeBytes, pInfo):
   '''
-  FreeBytesAvailable = 1000
-  TotalNumberOfBytes = 1000
-  TotalNumberOfFreeBytes = 1000
+  FreeBytesAvailable = 0x123456789abcdef0L
+  TotalNumberOfBytes = 0x10000000L#256M=256*1024*1024
+  TotalNumberOfFreeBytes = 0x1000L
+  setLongLongByPoint(pFreeBytesAvailable, FreeBytesAvailable)
+  setLongLongByPoint(pTotalNumberOfBytes, TotalNumberOfBytes)
+  setLongLongByPoint(pTotalNumberOfFreeBytes, TotalNumberOfFreeBytes)
   '''
   return 0# WINFUNCTYPE(c_int, PULONGLONG, PULONGLONG, PULONGLONG, PDOKAN_FILE_INFO)),
 def GetVolumeInformationFunc(VolumeNameBuffer, VolumeNameSize, VolumeSerialNumber, 
-    MaximumComponentLength, FileSystemFlags, FileSystemNameBuffer, FileSystemNameSize, pInfo): 
-  '''
+    MaximumComponentLength, FileSystemFlags, FileSystemNameBuffer, FileSystemNameSize, pInfo):
   #log(VolumeNameBuffer, VolumeNameSize, VolumeSerialNumber, 
-  #  MaximumComponentLength, FileSystemFlags, FileSystemNameBuffer, FileSystemNameSize, pInfo)
-  if VolumeNameSize > len('my own volumne'):
-    return 0
-  VolumeNameBuffer = 'my own volumne'
-  VolumeNameSize = len('my own volumne')
+  #MaximumComponentLength, FileSystemFlags, FileSystemNameBuffer, FileSystemNameSize, pInfo)
+  memmove(VolumeNameBuffer, u'my own volumne', min(VolumeNameSize, len(u'my own volumne')))
   VolumeSerialNumber = 0
   MaximumComponentLength = 0
   FileSystemFlags = 0
-  FileSystemNameBuffer = 'wwj'
-  FileSystemNameSize = len('wwj')
-  return 1
-  '''
+  memmove(FileSystemNameBuffer, 'wwj', min(FileSystemNameSize, len('wwj')))
   return 0# WINFUNCTYPE(c_int, LPWSTR, DWORD, LPDWORD, LPDWORD, LPDWORD, LPWSTR, DWORD, PDOKAN_FILE_INFO)),
 def UnmountFunc(pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
   dbg()
