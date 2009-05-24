@@ -22,8 +22,10 @@ if not hasattr(fuse, '__version__'):
 
 fuse.fuse_python_api = (0, 2)
 
+'''
 hello_path = '/hello.txt'
 hello_str = 'Hello World!\n'
+'''
 
 class MyStat(fuse.Stat):
     def __init__(self):
@@ -38,42 +40,48 @@ class MyStat(fuse.Stat):
         self.st_mtime = 0
         self.st_ctime = 0
 
-class HelloFS(Fuse):
+baseFilesys = "d:/l"
 
+class mirrorFs(Fuse):
+    def getPath(self, path):
+      #print 'get path', path
+      realP = baseFilesys + path
+      #print realP
+      return realP
     def getattr(self, path):
-        st = MyStat()
-        if path == '/':
-            st.st_mode = stat.S_IFDIR | 0755
-            st.st_nlink = 2
-        elif path == hello_path:
-            st.st_mode = stat.S_IFREG | 0444
-            st.st_nlink = 1
-            st.st_size = len(hello_str)
-        else:
-            return -errno.ENOENT
+      print 'get path attr', path
+      st = MyStat()
+      if path == '/':# or path == '.' or path == '..':
+        st.st_mode = stat.S_IFDIR | 0755
+        st.st_nlink = 2
         return st
+      try:
+        return os.stat(self.getPath(path))
+      except:
+        print 'no stat', self.getPath(path)
+        return -errno.ENOENT
 
     def readdir(self, path, offset):
-        for r in  '.', '..', hello_path[1:]:
+        #yield fuse.Direntry('a.txt')
+        #for r in  '.', '..':
+        #    yield fuse.Direntry(r)
+        for r in os.listdir(self.getPath(path)):
             yield fuse.Direntry(r)
 
     def open(self, path, flags):
-        if path != hello_path:
+        #print 'calling open'
+        if self.getattr(path) == -errno.ENOENT:
             return -errno.ENOENT
         accmode = os.O_RDONLY | os.O_WRONLY | os.O_RDWR
         if (flags & accmode) != os.O_RDONLY:
             return -errno.EACCES
 
     def read(self, path, size, offset):
-        if path != hello_path:
+        if self.getattr(path) == -errno.ENOENT:
             return -errno.ENOENT
-        slen = len(hello_str)
-        if offset < slen:
-            if offset + size > slen:
-                size = slen - offset
-            buf = hello_str[offset:offset+size]
-        else:
-            buf = ''
+        f = open(self.getPath(path))
+        f.seek(offset)
+        buf = f.read(size)
         return buf
 
 def main():
@@ -81,7 +89,7 @@ def main():
 Userspace hello example
 
 """ + Fuse.fusage
-    server = HelloFS(version="%prog " + fuse.__version__,
+    server = mirrorFs(version="%prog " + fuse.__version__,
                      usage=usage,
                      dash_s_do='setsingle')
 

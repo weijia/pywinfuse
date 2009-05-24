@@ -50,6 +50,7 @@ class Direntry:
     self.name = name
   def getName(self):
     return self.name
+    #return unicode(self.name).encode('utf-8')
     return self.name.replace('/','\\')
 
 
@@ -57,11 +58,12 @@ fuse_python_api = None
 
 class fuseBase:
   fusage = 'no usage currently'
-  def __init__(self, usage = '', dash_s_do = '', version = ''):
+  def __init__(self, usage = '', dash_s_do = '', version = '', debug = 0):
     #The following is used to be compitable with Linux Fuse Python binding
     self.flags = 0
     self.multithreaded = 0
     self.allow_other = 0
+    self.debug = debug
     
   def parse(self, errex = 0):
     pass
@@ -145,7 +147,7 @@ class fuseBase:
     option = _DOKAN_OPTIONS(
     'K',#('DriveLetter', WCHAR),
     0,#('ThreadCount', USHORT),
-    1,#('DebugMode', UCHAR),
+    self.debug,#('DebugMode', UCHAR),
     1,#('UseStdErr', UCHAR),
     1,#('UseAltStream', UCHAR),
     0,#('UseKeepAlive', UCHAR),

@@ -9,6 +9,7 @@ import win32file
 import stat
 import errno
 import os
+import re
 __version__ = '0.1'
 # functions
 def whoami():
@@ -43,8 +44,9 @@ def cre(CreationDisposition):
     return win32file.ERROR_ALREADY_EXISTS
   return 0
 
-
-class Fuse(fuseBase):
+from fuseOpen import *
+class Fuse(openSupport, fuseBase):
+  '''
   def setDirFlag(pInfo):
     pInfo.IsDirectory = 1
   def CreateFileFunc(self, FileName, DesiredAccess, ShareMode, CreationDisposition, FlagsAndAttributes, pInfo):
@@ -52,12 +54,14 @@ class Fuse(fuseBase):
     unixFilename = FileName.replace('\\','/')
     if FileName == '\\':
       self.setDirFlag()
-    if self.open(unixFilename, os.O_RDONLY) != -errno.ENOENT:
+    if self.getattr(unixFilename) != -errno.ENOENT:
       print 'exist'
       return cre(CreationDisposition)
     else:
       return cre(CreationDisposition)
+  '''
   def OpenDirectoryFunc(self, FileName, pInfo):
+    dbgP(FileName, pInfo)
     unixFilename = FileName.replace('\\','/')
     if self.open(unixFilename, os.O_RDONLY) != -errno.ENOENT:
       return 0
@@ -74,12 +78,12 @@ class Fuse(fuseBase):
     return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
   
   def ReadFileFunc(self, FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo):
-    #dbgP(FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo)
+    dbgP(FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo)
     unixFilename = FileName.replace('\\','/')
     data = self.read(unixFilename, NumberOfBytesToRead, Offset)
     if data == -errno.ENOENT:
-      print 'data not exist'
-      return -2
+      print 'data not exist', FileName
+      return -win32file.ERROR_FILE_NOT_FOUND
     if data == '':
       print 'end of data'
       return -1
@@ -162,7 +166,7 @@ class Fuse(fuseBase):
       #  print 'continue'
       #  continue
       finalPath = os.path.join(PathName, entry.getName())
-      print 'finalPath',finalPath
+      #print 'finalPath',finalPath
       unixFinal = finalPath.replace('\\','/')
       st = self.getattr(unixFinal)
       if st != -errno.ENOENT:
@@ -172,23 +176,89 @@ class Fuse(fuseBase):
         print 'size',Buffer.nFileSizeLow
       else:
         continue
-      print 'Buffer.nFileSizeLow', Buffer.nFileSizeLow
+      #print 'Buffer.nFileSizeLow', Buffer.nFileSizeLow
       he = _WIN32_FIND_DATAW(
-        Buffer.dwFileAttributes,#('dwFileAttributes', DWORD),
-        _FILETIME(0,0),#('ftCreationTime', FILETIME),
-        _FILETIME(0,0),#('ftLastAccessTime', FILETIME),
-        _FILETIME(0,0),#('ftLastWriteTime', FILETIME),
-        0,#('nFileSizeHigh', DWORD),
-        Buffer.nFileSizeLow,#('nFileSizeLow', DWORD),
-        0,#('dwReserved0', DWORD),
-        0,#('dwReserved1', DWORD),
-        entry.getName(),#('cFileName', WCHAR * 260),
-        entry.getName())#('cAlternateFileName', WCHAR * 14),)
+        Buffer.dwFileAttributes,#('dwFileAttributes', DWORD),#0
+        _FILETIME(0,0),#('ftCreationTime', FILETIME),#4
+        _FILETIME(0,0),#('ftLastAccessTime', FILETIME),#12
+        _FILETIME(0,0),#('ftLastWriteTime', FILETIME),#20
+        0,#('nFileSizeHigh', DWORD),#28
+        Buffer.nFileSizeLow,#('nFileSizeLow', DWORD),#32
+        0,#('dwReserved0', DWORD),#36
+        0,#('dwReserved1', DWORD),#40
+        'a.txt',#entry.getName(),#('cFileName', WCHAR * 260),#This can only be const string!!! if getName function called here, the result is not correct.
+        '')#('cAlternateFileName', WCHAR * 14),)
+      #print '---------------------',string_at(addressof(he)+44)
+      #print '---------------------',string_at(addressof(he)+46)      
+      #memmove(addressof(he)+44, byref(c_char_p(u'a.txt')), len(entry.getName()))
+      print addressof(he)
+      #setStringByPoint(addressof(he)+44, entry.getName(), 2*len(entry.getName())
+      setStringByPoint(addressof(he)+44, unicode(entry.getName()), win32file.MAX_PATH)
+      #print addressof(he)
+      #print '---------------------',string_at(addressof(he)+44)
+      #print '---------------------name',he.cFileName
       PFillFindData(pointer(he), pInfo)
     return 0# WINFUNCTYPE(c_int, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)),
   def FindFilesWithPatternFunc(self, PathName, SearchPattern, PFillFindData, pInfo):
-    dbgP(PathName, SearchPattern, PFillFindData, pInfo)
-    return self.FindFilesFunc(PathName, PFillFindData, pInfo)
+    print 'finding files in: %s'%PathName
+    unixFilename = PathName.replace('\\','/')
+    offset = 0
+    Buffer = _BY_HANDLE_FILE_INFORMATION(
+      0,#('dwFileAttributes', DWORD),
+      _FILETIME(0,0),#('ftCreationTime', FILETIME),
+      _FILETIME(0,0),#('ftLastAccessTime', FILETIME),
+      _FILETIME(0,0),#('ftLastWriteTime', FILETIME),
+      0,#('dwVolumeSerialNumber', DWORD),
+      0,#('nFileSizeHigh', DWORD),
+      0,#('nFileSizeLow', DWORD),
+      0,#('nNumberOfLinks', DWORD),
+      0,#('nFileIndexHigh', DWORD),
+      0#('nFileIndexLow', DWORD),
+      )
+    for entry in self.readdir(unixFilename, offset):
+      #entry = self.readdir(unixFilename, offset)
+      #if entry == None:
+      #  break
+      #if (entry.getName() == '.') or (entry.getName() == '..'):
+      #  print 'continue'
+      #  continue
+      regPat = SearchPattern.replace('*', '.*').replace('\\','\\\\')
+      if re.match(regPat, entry.getName()) == None:
+        print 'ignore %s'%entry.getName()
+        continue
+      finalPath = os.path.join(PathName, entry.getName())
+      #print 'finalPath',finalPath
+      unixFinal = finalPath.replace('\\','/')
+      st = self.getattr(unixFinal)
+      if st != -errno.ENOENT:
+        Buffer.dwFileAttributes = self.translateModeFromUnix(st)
+        Buffer.nFileSizeLow = st.st_size
+        print 'attr',Buffer.dwFileAttributes
+        print 'size',Buffer.nFileSizeLow
+      else:
+        continue
+      #print 'Buffer.nFileSizeLow', Buffer.nFileSizeLow
+      he = _WIN32_FIND_DATAW(
+        Buffer.dwFileAttributes,#('dwFileAttributes', DWORD),#0
+        _FILETIME(0,0),#('ftCreationTime', FILETIME),#4
+        _FILETIME(0,0),#('ftLastAccessTime', FILETIME),#12
+        _FILETIME(0,0),#('ftLastWriteTime', FILETIME),#20
+        0,#('nFileSizeHigh', DWORD),#28
+        Buffer.nFileSizeLow,#('nFileSizeLow', DWORD),#32
+        0,#('dwReserved0', DWORD),#36
+        0,#('dwReserved1', DWORD),#40
+        'a.txt',#entry.getName(),#('cFileName', WCHAR * 260),#This can only be const string!!! if getName function called here, the result is not correct.
+        '')#('cAlternateFileName', WCHAR * 14),)
+      #print '---------------------',string_at(addressof(he)+44)
+      #print '---------------------',string_at(addressof(he)+46)      
+      #memmove(addressof(he)+44, byref(c_char_p(u'a.txt')), len(entry.getName()))
+      print addressof(he)
+      #setStringByPoint(addressof(he)+44, entry.getName(), 2*len(entry.getName())
+      setStringByPoint(addressof(he)+44, unicode(entry.getName()), win32file.MAX_PATH)
+      #print addressof(he)
+      #print '---------------------',string_at(addressof(he)+44)
+      #print '---------------------name',he.cFileName
+      PFillFindData(pointer(he), pInfo)
     return 0# WINFUNCTYPE(c_int, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)),
   def SetFileAttributesFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
     dbg()
@@ -215,7 +285,7 @@ class Fuse(fuseBase):
     dbg()
     return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),
   def GetDiskFreeSpaceFunc(self, pFreeBytesAvailable, pTotalNumberOfBytes, pTotalNumberOfFreeBytes, pInfo):
-    FreeBytesAvailable = 0x1234567L
+    FreeBytesAvailable = 0x10000000L
     TotalNumberOfBytes = 0x10000000L#256M=256*1024*1024
     TotalNumberOfFreeBytes = 0x1234567L
     setLongLongByPoint(pFreeBytesAvailable, FreeBytesAvailable)
