@@ -21,6 +21,7 @@ def log(a = '',b='',c='',d='',e='',f='',g='',h='',):
     print whosdaddy(),a,b,c,d,e
 
 def dbg(*args):
+  return
   print whosdaddy()
   logStr = ''
   for i in args:
@@ -61,7 +62,7 @@ class Fuse(openSupport, fuseBase):
       return cre(CreationDisposition)
   '''
   def OpenDirectoryFunc(self, FileName, pInfo):
-    dbgP(FileName, pInfo)
+    #dbgP(FileName, pInfo)
     unixFilename = FileName.replace('\\','/')
     if self.open(unixFilename, os.O_RDONLY) != -errno.ENOENT:
       return 0
@@ -78,8 +79,12 @@ class Fuse(openSupport, fuseBase):
     return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
   
   def ReadFileFunc(self, FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo):
-    dbgP(FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo)
+    #dbgP(FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo)
+    #Why the directory is read?
+    #Todo: find why, now, check if it is dir first
     unixFilename = FileName.replace('\\','/')
+    if self.getattr(unixFilename).st_mode & stat.S_IFDIR:
+      return -win32file.ERROR_FILE_NOT_FOUND
     data = self.read(unixFilename, NumberOfBytesToRead, Offset)
     if data == -errno.ENOENT:
       print 'data not exist', FileName
@@ -136,7 +141,7 @@ class Fuse(openSupport, fuseBase):
       setDwordByPoint(Buffer+36, st.st_size&0xffffffff)#('nFileSizeLow', DWORD),
       setDwordByPoint(Buffer+40, 1)
       #Function always return 0 when success
-      print 'success'
+      #print 'success'
       return 0
     else:
       print 'returning -2'
@@ -172,8 +177,8 @@ class Fuse(openSupport, fuseBase):
       if st != -errno.ENOENT:
         Buffer.dwFileAttributes = self.translateModeFromUnix(st)
         Buffer.nFileSizeLow = st.st_size
-        print 'attr',Buffer.dwFileAttributes
-        print 'size',Buffer.nFileSizeLow
+        #print 'attr',Buffer.dwFileAttributes
+        #print 'size',Buffer.nFileSizeLow
       else:
         continue
       #print 'Buffer.nFileSizeLow', Buffer.nFileSizeLow
@@ -191,7 +196,7 @@ class Fuse(openSupport, fuseBase):
       #print '---------------------',string_at(addressof(he)+44)
       #print '---------------------',string_at(addressof(he)+46)      
       #memmove(addressof(he)+44, byref(c_char_p(u'a.txt')), len(entry.getName()))
-      print addressof(he)
+      #print addressof(he)
       #setStringByPoint(addressof(he)+44, entry.getName(), 2*len(entry.getName())
       setStringByPoint(addressof(he)+44, unicode(entry.getName()), win32file.MAX_PATH)
       #print addressof(he)
@@ -200,7 +205,7 @@ class Fuse(openSupport, fuseBase):
       PFillFindData(pointer(he), pInfo)
     return 0# WINFUNCTYPE(c_int, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)),
   def FindFilesWithPatternFunc(self, PathName, SearchPattern, PFillFindData, pInfo):
-    print 'finding files in: %s'%PathName
+    #print 'finding files in: %s'%PathName
     unixFilename = PathName.replace('\\','/')
     offset = 0
     Buffer = _BY_HANDLE_FILE_INFORMATION(
@@ -224,7 +229,7 @@ class Fuse(openSupport, fuseBase):
       #  continue
       regPat = SearchPattern.replace('*', '.*').replace('\\','\\\\')
       if re.match(regPat, entry.getName()) == None:
-        print 'ignore %s'%entry.getName()
+        #print 'ignore %s'%entry.getName()
         continue
       finalPath = os.path.join(PathName, entry.getName())
       #print 'finalPath',finalPath
@@ -233,8 +238,8 @@ class Fuse(openSupport, fuseBase):
       if st != -errno.ENOENT:
         Buffer.dwFileAttributes = self.translateModeFromUnix(st)
         Buffer.nFileSizeLow = st.st_size
-        print 'attr',Buffer.dwFileAttributes
-        print 'size',Buffer.nFileSizeLow
+        #print 'attr',Buffer.dwFileAttributes
+        #print 'size',Buffer.nFileSizeLow
       else:
         continue
       #print 'Buffer.nFileSizeLow', Buffer.nFileSizeLow
@@ -252,7 +257,7 @@ class Fuse(openSupport, fuseBase):
       #print '---------------------',string_at(addressof(he)+44)
       #print '---------------------',string_at(addressof(he)+46)      
       #memmove(addressof(he)+44, byref(c_char_p(u'a.txt')), len(entry.getName()))
-      print addressof(he)
+      #print addressof(he)
       #setStringByPoint(addressof(he)+44, entry.getName(), 2*len(entry.getName())
       setStringByPoint(addressof(he)+44, unicode(entry.getName()), win32file.MAX_PATH)
       #print addressof(he)
@@ -285,9 +290,9 @@ class Fuse(openSupport, fuseBase):
     dbg()
     return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),
   def GetDiskFreeSpaceFunc(self, pFreeBytesAvailable, pTotalNumberOfBytes, pTotalNumberOfFreeBytes, pInfo):
-    FreeBytesAvailable = 0x10000000L
-    TotalNumberOfBytes = 0x10000000L#256M=256*1024*1024
-    TotalNumberOfFreeBytes = 0x1234567L
+    FreeBytesAvailable = 0x10000000000L
+    TotalNumberOfBytes = 0x40000000000L#256M=256*1024*1024
+    TotalNumberOfFreeBytes = 0x10000000000L
     setLongLongByPoint(pFreeBytesAvailable, FreeBytesAvailable)
     setLongLongByPoint(pTotalNumberOfBytes, TotalNumberOfBytes)
     setLongLongByPoint(pTotalNumberOfFreeBytes, TotalNumberOfFreeBytes)

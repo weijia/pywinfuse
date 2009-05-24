@@ -13,11 +13,11 @@ class openSupport:
     pass
   def CreateFileFunc(self, FileName, DesiredAccess, ShareMode, CreationDisposition, FlagsAndAttributes, pInfo):
     #dbgP(FileName,DesiredAccess,ShareMode,CreationDisposition,FlagsAndAttributes, pInfo)
-    print 'new create file fun called'
+    #print 'new create file fun called'
     unixFilename = FileName.replace('\\','/')
     if FileName == '/':
       pInfo.IsDirectory = 1
-    print unixFilename
+    #print unixFilename
     #Check the existance of the file
     if self.getattr(unixFilename) != -errno.ENOENT:
       #File exist, check if we need to fail when the file exists

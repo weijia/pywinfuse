@@ -147,9 +147,9 @@ class fuseBase:
     option = _DOKAN_OPTIONS(
     'K',#('DriveLetter', WCHAR),
     0,#('ThreadCount', USHORT),
-    self.debug,#('DebugMode', UCHAR),
-    1,#('UseStdErr', UCHAR),
-    1,#('UseAltStream', UCHAR),
+    0,#('DebugMode', UCHAR),
+    0,#('UseStdErr', UCHAR),
+    0,#('UseAltStream', UCHAR),
     0,#('UseKeepAlive', UCHAR),
     0#('GlobalContext', ULONG64),
     )

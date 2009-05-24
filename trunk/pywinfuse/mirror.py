@@ -40,7 +40,7 @@ class MyStat(fuse.Stat):
         self.st_mtime = 0
         self.st_ctime = 0
 
-baseFilesys = "d:/l"
+baseFilesys = "d:/"
 
 class mirrorFs(Fuse):
     def getPath(self, path):
@@ -49,7 +49,7 @@ class mirrorFs(Fuse):
       #print realP
       return realP
     def getattr(self, path):
-      print 'get path attr', path
+      #print 'get path attr', path
       st = MyStat()
       if path == '/':# or path == '.' or path == '..':
         st.st_mode = stat.S_IFDIR | 0755
@@ -58,7 +58,7 @@ class mirrorFs(Fuse):
       try:
         return os.stat(self.getPath(path))
       except:
-        print 'no stat', self.getPath(path)
+        #print 'no stat', self.getPath(path)
         return -errno.ENOENT
 
     def readdir(self, path, offset):
@@ -79,10 +79,14 @@ class mirrorFs(Fuse):
     def read(self, path, size, offset):
         if self.getattr(path) == -errno.ENOENT:
             return -errno.ENOENT
-        f = open(self.getPath(path))
+        #print 'open file:',self.getPath(path)
+        f = open(self.getPath(path),'rb')
         f.seek(offset)
         buf = f.read(size)
+        f.close()
+        #print 'read len:', len(buf)
         return buf
+        
 
 def main():
     usage="""

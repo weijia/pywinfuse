@@ -20,7 +20,7 @@ def setLongLongByPoint(valueAddress, value):
 def setStringByPoint(valueAddress, value, length):
   cnt = 0
   for i in value:
-    print i
+    #print i
     cnt += 2
     if cnt+2 > length:
       break
@@ -29,7 +29,7 @@ def setStringByPoint(valueAddress, value, length):
     valueAddress += 1
     memset(valueAddress, (ord(i)>>8)&0xff, 1)
     valueAddress += 1
-    print valueAddress
+    #print valueAddress
   memset(valueAddress, 0, 1)
   valueAddress += 1
   memset(valueAddress, 0, 1)
