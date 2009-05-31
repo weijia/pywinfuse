@@ -63,8 +63,8 @@ class mirrorFs(Fuse):
 
     def readdir(self, path, offset):
         #yield fuse.Direntry('a.txt')
-        #for r in  '.', '..':
-        #    yield fuse.Direntry(r)
+        for r in  '.', '..':
+            yield fuse.Direntry(r)
         for r in os.listdir(self.getPath(path)):
             yield fuse.Direntry(r)
 
@@ -95,7 +95,7 @@ Userspace hello example
 """ + Fuse.fusage
     server = mirrorFs(version="%prog " + fuse.__version__,
                      usage=usage,
-                     dash_s_do='setsingle')
+                     dash_s_do='setsingle', debug = 1)
 
     server.parse(errex=1)
     server.main()

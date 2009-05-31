@@ -95,6 +95,7 @@ class Fuse(openSupport, fuseBase):
     length = len(data)
     memmove(Buffer, data, length)
     setDwordByPoint(NumberOfBytesRead, length)
+    #NumberOfBytesRead = DWORD(length)
     return 0# WINFUNCTYPE(c_int, LPCWSTR, LPVOID, DWORD, LPDWORD, LONGLONG, PDOKAN_FILE_INFO)),
 
 
@@ -290,9 +291,9 @@ class Fuse(openSupport, fuseBase):
     dbg()
     return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),
   def GetDiskFreeSpaceFunc(self, pFreeBytesAvailable, pTotalNumberOfBytes, pTotalNumberOfFreeBytes, pInfo):
-    FreeBytesAvailable = 0x10000000000L
-    TotalNumberOfBytes = 0x40000000000L#256M=256*1024*1024
-    TotalNumberOfFreeBytes = 0x10000000000L
+    FreeBytesAvailable = 0x1000000000000L
+    TotalNumberOfBytes = 0x4000000000000L#256M=256*1024*1024
+    TotalNumberOfFreeBytes = 0x1000000000000L
     setLongLongByPoint(pFreeBytesAvailable, FreeBytesAvailable)
     setLongLongByPoint(pTotalNumberOfBytes, TotalNumberOfBytes)
     setLongLongByPoint(pTotalNumberOfFreeBytes, TotalNumberOfFreeBytes)

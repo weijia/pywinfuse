@@ -63,8 +63,10 @@ class fuseBase:
     self.flags = 0
     self.multithreaded = 0
     self.allow_other = 0
-    self.debug = debug
-    
+    if debug != 1:
+      self.debug = c_ubyte(0)
+    else:
+      self.debug = c_ubyte(1)
   def parse(self, errex = 0):
     pass
   
@@ -147,12 +149,15 @@ class fuseBase:
     option = _DOKAN_OPTIONS(
     'K',#('DriveLetter', WCHAR),
     0,#('ThreadCount', USHORT),
-    0,#('DebugMode', UCHAR),
-    0,#('UseStdErr', UCHAR),
+    self.debug,#('DebugMode', UCHAR),
+    self.debug,#('UseStdErr', UCHAR),
     0,#('UseAltStream', UCHAR),
     0,#('UseKeepAlive', UCHAR),
     0#('GlobalContext', ULONG64),
     )
+    #from ctypesTest import *
+    #dumpMem(addressof(self.debug), 4)
+    #dumpMem(option, 15)
     self.fuse_args = fuseArgs
     windll.dokan.DokanMain(byref(option),byref(operation))
 
