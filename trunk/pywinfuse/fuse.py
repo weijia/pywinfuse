@@ -5,7 +5,7 @@ from dokan import *
 from tools import *
 import inspect
 from fuseBase import *
-import win32file
+import myWin32file
 import stat
 import errno
 import os
@@ -37,12 +37,12 @@ def dbgP(*args):
 
 
 def cre(CreationDisposition):
-  if CreationDisposition == win32file.CREATE_ALWAYS:
+  if CreationDisposition == myWin32file.CREATE_ALWAYS:
     print 'return 183'
-    return win32file.ERROR_ALREADY_EXISTS
-  if CreationDisposition == win32file.OPEN_ALWAYS:
-    print win32file.ERROR_ALREADY_EXISTS
-    return win32file.ERROR_ALREADY_EXISTS
+    return myWin32file.ERROR_ALREADY_EXISTS
+  if CreationDisposition == myWin32file.OPEN_ALWAYS:
+    print myWin32file.ERROR_ALREADY_EXISTS
+    return myWin32file.ERROR_ALREADY_EXISTS
   return 0
 
 from fuseOpen import *
@@ -84,11 +84,11 @@ class Fuse(openSupport, fuseBase):
     #Todo: find why, now, check if it is dir first
     unixFilename = FileName.replace('\\','/')
     if self.getattr(unixFilename).st_mode & stat.S_IFDIR:
-      return -win32file.ERROR_FILE_NOT_FOUND
+      return -myWin32file.ERROR_FILE_NOT_FOUND
     data = self.read(unixFilename, NumberOfBytesToRead, Offset)
     if data == -errno.ENOENT:
       print 'data not exist', FileName
-      return -win32file.ERROR_FILE_NOT_FOUND
+      return -myWin32file.ERROR_FILE_NOT_FOUND
     if data == '':
       print 'end of data'
       return -1
@@ -109,9 +109,9 @@ class Fuse(openSupport, fuseBase):
   def translateModeFromUnix(self, st):
     if st.st_mode & stat.S_IFDIR:
       #This element is a directory, set the correct attribute
-      return win32file.FILE_ATTRIBUTE_DIRECTORY#16
+      return myWin32file.FILE_ATTRIBUTE_DIRECTORY#16
     else:
-      return win32file.FILE_ATTRIBUTE_ARCHIVE#32
+      return myWin32file.FILE_ATTRIBUTE_ARCHIVE#32
     
   def GetFileInformationFunc(self, FileName, Buffer, pInfo):
     #log(FileName, Buffer, pInfo)
@@ -199,7 +199,7 @@ class Fuse(openSupport, fuseBase):
       #memmove(addressof(he)+44, byref(c_char_p(u'a.txt')), len(entry.getName()))
       #print addressof(he)
       #setStringByPoint(addressof(he)+44, entry.getName(), 2*len(entry.getName())
-      setStringByPoint(addressof(he)+44, unicode(entry.getName()), win32file.MAX_PATH)
+      setStringByPoint(addressof(he)+44, unicode(entry.getName()), myWin32file.MAX_PATH)
       #print addressof(he)
       #print '---------------------',string_at(addressof(he)+44)
       #print '---------------------name',he.cFileName
@@ -260,7 +260,7 @@ class Fuse(openSupport, fuseBase):
       #memmove(addressof(he)+44, byref(c_char_p(u'a.txt')), len(entry.getName()))
       #print addressof(he)
       #setStringByPoint(addressof(he)+44, entry.getName(), 2*len(entry.getName())
-      setStringByPoint(addressof(he)+44, unicode(entry.getName()), win32file.MAX_PATH)
+      setStringByPoint(addressof(he)+44, unicode(entry.getName()), myWin32file.MAX_PATH)
       #print addressof(he)
       #print '---------------------',string_at(addressof(he)+44)
       #print '---------------------name',he.cFileName

@@ -22,12 +22,23 @@ from ftplib import FTP
 cachePath = "d:/cache/"
 from simpleFtpClient import *
 
+def getCacheInstance(server):
+  try:
+    from shove import Shove
+    print 'sqlite:///%s.sqlite'%server
+    ftpCache = Shove('sqlite:///%s.sqlite'%server)
+    #ftpCache = Shove()
+    print 'use shove'
+  except:
+    ftpCache = {}
+    print 'use dict'
+  return ftpCache
 
 class ftpFs(Fuse):
-    def __init__(self):
+    def __init__(self, server='localhost', user = "anonymous", passwd = "ftplib-example-2"):
       self.cacheList = {}
-      self.client = simpleFtpClient('localhost', 'wwj', 'wwj')
-      self.ftpCache = {}
+      self.client = simpleFtpClient(server, user, passwd)
+      self.ftpCache = getCacheInstance(server)
       Fuse.__init__(self)
     def getPath(self, path):
       #print 'get path', path
@@ -41,9 +52,9 @@ class ftpFs(Fuse):
         st.st_mode = stat.S_IFDIR | 0755
         st.st_nlink = 2
         return st
-      print path
+      #print path
       dirName, filename = path.rsplit('/',1)
-      print dirName, filename
+      #print dirName, filename
       dirName = dirName + '/'
       try:
           d = self.ftpCache[dirName]
@@ -67,9 +78,13 @@ class ftpFs(Fuse):
         #yield fuse.Direntry('a.txt')
         for r in  '.', '..':
             yield fuse.Direntry(r)
-        self.ftpCache[path] = self.client.getDir(path)
+        try:
+            cachedDir = self.ftpCache[path]
+        except KeyError:
+            self.ftpCache[path] = self.client.getDir(path)##########################################Reading ftp server
+            cachedDir = self.ftpCache[path]
         #print self.ftpCache[path]
-        for r in self.ftpCache[path]:
+        for r in cachedDir:
             print r[9]
             yield fuse.Direntry(r[9])
 
@@ -105,13 +120,15 @@ class ftpFs(Fuse):
         #Generate local file path
         cached = self.getPath(str(uuid.uuid4()))
         wf = open(cached, 'wb')
-        self.client.get(path, wf)
+        self.client.get(path, wf)##########################################Reading ftp server
         wf.close()
         return cached
         
 def main():
-    server = ftpFs()
-    server.main()
+    #server = ftpFs(user='wwj',passwd='wwj')
+    import sys
+    fuseServer = ftpFs(server = sys.argv[1], user = sys.argv[2], passwd = sys.argv[3])
+    fuseServer.main()
 
 if __name__ == '__main__':
     main()

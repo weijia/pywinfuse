@@ -1,9 +1,9 @@
-import win32file
+import myWin32file
 import errno
 '''
-opTranslate = {win32file.OPEN_EXISTING:,
-win32file.TRUNCATE_EXISTING:,
-win32file.CREATE_NEW:}
+opTranslate = {myWin32file.OPEN_EXISTING:,
+myWin32file.TRUNCATE_EXISTING:,
+myWin32file.CREATE_NEW:}
 '''
 
 
@@ -21,17 +21,17 @@ class openSupport:
     #Check the existance of the file
     if self.getattr(unixFilename) != -errno.ENOENT:
       #File exist, check if we need to fail when the file exists
-      if (win32file.CREATE_NEW == CreationDisposition):
-        return -win32file.ERROR_FILE_NOT_FOUND
+      if (myWin32file.CREATE_NEW == CreationDisposition):
+        return -myWin32file.ERROR_FILE_NOT_FOUND
     else:
-      if (win32file.OPEN_EXISTING == CreationDisposition) or\
-        (win32file.TRUNCATE_EXISTING == CreationDisposition):
-        return -win32file.ERROR_FILE_NOT_FOUND
+      if (myWin32file.OPEN_EXISTING == CreationDisposition) or\
+        (myWin32file.TRUNCATE_EXISTING == CreationDisposition):
+        return -myWin32file.ERROR_FILE_NOT_FOUND
       #Create the file if required
-      if (win32file.CREATE_NEW == CreationDisposition) or\
-        (win32file.CREATE_ALWAYS == CreationDisposition) or\
-        (win32file.OPEN_ALWAYS == CreationDisposition) or\
-        (win32file.TRUNCATE_EXISTING == CreationDisposition):
+      if (myWin32file.CREATE_NEW == CreationDisposition) or\
+        (myWin32file.CREATE_ALWAYS == CreationDisposition) or\
+        (myWin32file.OPEN_ALWAYS == CreationDisposition) or\
+        (mymyWin32file.TRUNCATE_EXISTING == CreationDisposition):
         self.create(unixFilename)
     
     return 0
