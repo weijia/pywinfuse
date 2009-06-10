@@ -85,7 +85,7 @@ class ftpFs(Fuse):
             cachedDir = self.ftpCache[path]
         #print self.ftpCache[path]
         for r in cachedDir:
-            print r[9]
+            #print r[9]
             yield fuse.Direntry(r[9])
 
     def open(self, path, flags):
@@ -127,7 +127,19 @@ class ftpFs(Fuse):
 def main():
     #server = ftpFs(user='wwj',passwd='wwj')
     import sys
-    fuseServer = ftpFs(server = sys.argv[1], user = sys.argv[2], passwd = sys.argv[3])
+    if len(sys.argv) < 2:
+        server = 'localhost'
+    else:
+        server = sys.argv[1]
+    if len(sys.argv) < 3:
+        user = 'anonymous'
+    else:
+        user = sys.argv[2]
+    if len(sys.argv) < 4:
+        passwd = 'anony@localhost'
+    else:
+        passwd = sys.argv[3]
+    fuseServer = ftpFs(server = server, user = user, passwd = passwd)
     fuseServer.main()
 
 if __name__ == '__main__':
