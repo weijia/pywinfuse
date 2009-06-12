@@ -9,8 +9,22 @@ myWin32file.CREATE_NEW:}
 
 
 class openSupport:
-  def create(fn):
+  def create(*args):
     pass
+  '''
+  def setDirFlag(pInfo):
+    pInfo.IsDirectory = 1
+  def CreateFileFunc(self, FileName, DesiredAccess, ShareMode, CreationDisposition, FlagsAndAttributes, pInfo):
+    #dbgP(FileName,DesiredAccess,ShareMode,CreationDisposition,FlagsAndAttributes, pInfo)
+    unixFilename = FileName.replace('\\','/')
+    if FileName == '\\':
+      self.setDirFlag()
+    if self.getattr(unixFilename) != -errno.ENOENT:
+      print 'exist'
+      return cre(CreationDisposition)
+    else:
+      return cre(CreationDisposition)
+  '''
   def CreateFileFunc(self, FileName, DesiredAccess, ShareMode, CreationDisposition, FlagsAndAttributes, pInfo):
     #dbgP(FileName,DesiredAccess,ShareMode,CreationDisposition,FlagsAndAttributes, pInfo)
     #print 'new create file fun called'
@@ -32,7 +46,27 @@ class openSupport:
         (myWin32file.CREATE_ALWAYS == CreationDisposition) or\
         (myWin32file.OPEN_ALWAYS == CreationDisposition) or\
         (mymyWin32file.TRUNCATE_EXISTING == CreationDisposition):
-        self.create(unixFilename)
-    
+        try:
+          if self.create(unixFilename) != -errno.ENOENT:
+            return 0
+        except:
+          pass
+        return -myWin32file.ERROR_FILE_NOT_FOUND
     return 0
         
+
+  def mkdir(self, path, mode):
+    print '*** mkdir', path, oct(mode)
+    return -errno.ENOSYS
+  def CreateDirectoryFunc(self, FileName, pInfo):# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+    #dbg()
+    res = self.mkdir(self.translateFileName(FileName), 777)
+    return self.checkError(res)
+    
+      
+  def rename(self, oldPath, newPath):
+    print '*** rename', oldPath, newPath
+    return -errno.ENOENT
+  def MoveFileFunc(self, FileName, NewFileName, ReplaceIfExisting, pInfo):
+    res = self.rename(self.translateFileName(FileName), self.translateFileName(NewFileName))
+    return self.checkError(res)

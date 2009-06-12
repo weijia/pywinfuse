@@ -46,21 +46,10 @@ def cre(CreationDisposition):
   return 0
 
 from fuseOpen import *
-class Fuse(openSupport, fuseBase):
-  '''
-  def setDirFlag(pInfo):
-    pInfo.IsDirectory = 1
-  def CreateFileFunc(self, FileName, DesiredAccess, ShareMode, CreationDisposition, FlagsAndAttributes, pInfo):
-    #dbgP(FileName,DesiredAccess,ShareMode,CreationDisposition,FlagsAndAttributes, pInfo)
-    unixFilename = FileName.replace('\\','/')
-    if FileName == '\\':
-      self.setDirFlag()
-    if self.getattr(unixFilename) != -errno.ENOENT:
-      print 'exist'
-      return cre(CreationDisposition)
-    else:
-      return cre(CreationDisposition)
-  '''
+from fuseUnlink import *
+class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
+  def translateFileName(self, FileName):
+    return FileName.replace('\\','/')
   def OpenDirectoryFunc(self, FileName, pInfo):
     #dbgP(FileName, pInfo)
     unixFilename = FileName.replace('\\','/')
@@ -68,9 +57,7 @@ class Fuse(openSupport, fuseBase):
       return 0
     else:
       return 0
-  def CreateDirectoryFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-    dbg()
-    return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+
   def CleanupFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
     dbg()
     return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
@@ -99,9 +86,6 @@ class Fuse(openSupport, fuseBase):
     return 0# WINFUNCTYPE(c_int, LPCWSTR, LPVOID, DWORD, LPDWORD, LONGLONG, PDOKAN_FILE_INFO)),
 
 
-  def WriteFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
-    dbg()
-    return 0# WINFUNCTYPE(c_int, LPCWSTR, LPCVOID, DWORD, LPDWORD, LONGLONG, PDOKAN_FILE_INFO)),
   def FlushFileBuffersFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
     dbg()
     return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
@@ -272,15 +256,11 @@ class Fuse(openSupport, fuseBase):
   def SetFileTimeFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
     dbg()
     return 0# WINFUNCTYPE(c_int, LPCWSTR, POINTER(FILETIME), POINTER(FILETIME), POINTER(FILETIME), PDOKAN_FILE_INFO)),
-  def DeleteFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
-    dbg()
-    return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+
   def DeleteDirectoryFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
     dbg()
     return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-  def MoveFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
-    dbg()
-    return 0# WINFUNCTYPE(c_int, LPCWSTR, LPCWSTR, BOOL, PDOKAN_FILE_INFO)),
+
   def SetEndOfFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
     dbg()
     return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, PDOKAN_FILE_INFO)),
@@ -312,3 +292,10 @@ class Fuse(openSupport, fuseBase):
     dbg()
     return 0# WINFUNCTYPE(c_int, PDOKAN_FILE_INFO)),
 
+  def checkError(self, ret):
+    if (ret != None) and (ret < 0):
+      print 'returned value:', ret
+      return -myWin32file.ERROR_FILE_NOT_FOUND
+    else:
+      print 'returning 0'
+      return 0
