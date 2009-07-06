@@ -1,11 +1,13 @@
 import myWin32file
 import errno
+from fuseBase import *
 '''
 opTranslate = {myWin32file.OPEN_EXISTING:,
 myWin32file.TRUNCATE_EXISTING:,
 myWin32file.CREATE_NEW:}
 '''
 
+import sys, traceback
 
 
 class openSupport:
@@ -33,7 +35,7 @@ class openSupport:
       pInfo.IsDirectory = 1
     #print unixFilename
     #Check the existance of the file
-    if self.getattr(unixFilename) != -errno.ENOENT:
+    if self.checkError(self.getattrWrapper(unixFilename)) == 0:
       #File exist, check if we need to fail when the file exists
       if (myWin32file.CREATE_NEW == CreationDisposition):
         return -myWin32file.ERROR_FILE_NOT_FOUND
@@ -46,14 +48,23 @@ class openSupport:
         (myWin32file.CREATE_ALWAYS == CreationDisposition) or\
         (myWin32file.OPEN_ALWAYS == CreationDisposition) or\
         (mymyWin32file.TRUNCATE_EXISTING == CreationDisposition):
-        try:
-          if self.create(unixFilename) != -errno.ENOENT:
-            return 0
-        except:
-          pass
-        return -myWin32file.ERROR_FILE_NOT_FOUND
+        return self.checkError(self.create(unixFilename))
     return 0
-        
+  
+  def getattrWrapper(self, path):
+    '''#Is this needed? gmailfs will not handle '/'?
+    st = Stat()
+    if path == '/':# or path == '.' or path == '..':
+      st.st_mode = stat.S_IFDIR | 0755
+      st.st_nlink = 2
+      return st
+    '''
+    try:
+      return self.getattr(path)
+    except:
+      print 'exception detected when getting attr:', path
+      traceback.print_exc(file=sys.stdout)
+    return -errno.ENOENT
 
   def mkdir(self, path, mode):
     print '*** mkdir', path, oct(mode)

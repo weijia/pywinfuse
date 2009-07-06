@@ -96,11 +96,25 @@ class mirrorFs(Fuse):
         os.rename(self.getPath(oldPath), self.getPath(newPath))
         
     def unlink(self, path):
-        os.remove(self.getPath(path))
+        try:
+          os.remove(self.getPath(path))
+        except WindowsError:
+          return -errno.ENOTEMPTY
         
     def rmdir(self, path):
-        os.rmdir(self.getPath(path))
-        
+        try:
+          os.rmdir(self.getPath(path))
+        except WindowsError:
+          return -errno.ENOTEMPTY
+    def write(self, path, buf, offset):
+        if self.getattr(path) == -errno.ENOENT:
+            return -errno.ENOENT
+        #print 'open file:',self.getPath(path)
+        f = open(self.getPath(path),'ab')
+        f.seek(offset)
+        f.write(buf)
+        f.close()
+          
 def main():
     usage="""
 Userspace hello example

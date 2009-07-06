@@ -41,7 +41,8 @@ class Stat:
 
 class fuseArgs:
   def __init__(self):
-    pass
+    self.mountpoint = None
+    
   def add(self, opt):
     pass
 
@@ -53,7 +54,12 @@ class Direntry:
     #return unicode(self.name).encode('utf-8')
     return self.name.replace('/','\\')
 
-
+class fuseOptDict:
+  def __init__(self):
+    pass
+  def copy(self):
+    pass
+    
 fuse_python_api = None
 
 class fuseBase:
@@ -63,6 +69,8 @@ class fuseBase:
     self.flags = 0
     self.multithreaded = 0
     self.allow_other = 0
+    self.optdict = fuseOptDict()
+    self.fuse_args = fuseArgs()
     if debug != 1:
       self.debug = c_ubyte(0)
     else:

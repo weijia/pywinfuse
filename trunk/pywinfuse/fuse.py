@@ -53,10 +53,11 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
   def OpenDirectoryFunc(self, FileName, pInfo):
     #dbgP(FileName, pInfo)
     unixFilename = FileName.replace('\\','/')
-    if self.open(unixFilename, os.O_RDONLY) != -errno.ENOENT:
+    st = self.getattrWrapper(unixFilename)
+    if st != -errno.ENOENT:
       return 0
     else:
-      return 0
+      return -myWin32file.ERROR_FILE_NOT_FOUND
 
   def CleanupFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
     dbg()
@@ -100,7 +101,7 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
   def GetFileInformationFunc(self, FileName, Buffer, pInfo):
     #log(FileName, Buffer, pInfo)
     unixFilename = FileName.replace('\\','/')
-    st = self.getattr(unixFilename)
+    st = self.getattrWrapper(unixFilename)
     if st != -errno.ENOENT:
       '''
       Buffer = _BY_HANDLE_FILE_INFORMATION(
@@ -152,13 +153,13 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
       #entry = self.readdir(unixFilename, offset)
       #if entry == None:
       #  break
-      #if (entry.getName() == '.') or (entry.getName() == '..'):
-      #  print 'continue'
-      #  continue
+      if (entry.getName() == '.') or (entry.getName() == '..'):
+        #print 'continue'
+        continue
       finalPath = os.path.join(PathName, entry.getName())
       #print 'finalPath',finalPath
       unixFinal = finalPath.replace('\\','/')
-      st = self.getattr(unixFinal)
+      st = self.getattrWrapper(unixFinal)
       if st != -errno.ENOENT:
         Buffer.dwFileAttributes = self.translateModeFromUnix(st)
         Buffer.nFileSizeLow = st.st_size
@@ -209,9 +210,9 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
       #entry = self.readdir(unixFilename, offset)
       #if entry == None:
       #  break
-      #if (entry.getName() == '.') or (entry.getName() == '..'):
-      #  print 'continue'
-      #  continue
+      if (entry.getName() == '.') or (entry.getName() == '..'):
+        #print 'continue'
+        continue
       regPat = SearchPattern.replace('*', '.*').replace('\\','\\\\')
       if re.match(regPat, entry.getName()) == None:
         #print 'ignore %s'%entry.getName()
@@ -219,7 +220,7 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
       finalPath = os.path.join(PathName, entry.getName())
       #print 'finalPath',finalPath
       unixFinal = finalPath.replace('\\','/')
-      st = self.getattr(unixFinal)
+      st = self.getattrWrapper(unixFinal)
       if st != -errno.ENOENT:
         Buffer.dwFileAttributes = self.translateModeFromUnix(st)
         Buffer.nFileSizeLow = st.st_size
@@ -256,10 +257,6 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
   def SetFileTimeFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
     dbg()
     return 0# WINFUNCTYPE(c_int, LPCWSTR, POINTER(FILETIME), POINTER(FILETIME), POINTER(FILETIME), PDOKAN_FILE_INFO)),
-
-  def DeleteDirectoryFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
-    dbg()
-    return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
 
   def SetEndOfFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
     dbg()
