@@ -24,10 +24,14 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #define DOKAN_DRIVER_NAME	L"dokan.sys"
 
-#ifdef _EXPORTING
+#ifndef _M_X64	
+  #ifdef _EXPORTING
 	#define DOKANAPI __declspec(dllimport) __stdcall
-#else
+  #else
 	#define DOKANAPI __declspec(dllexport) __stdcall
+  #endif
+#else
+  #define DOKANAPI
 #endif
 
 #define DOKAN_CALLBACK __stdcall
@@ -36,23 +40,36 @@ with this program. If not, see <http://www.gnu.org/licenses/>.
 extern "C" {
 #endif
 
+// The current Dokan version (ver 0.6.0). Please set this constant on DokanOptions->Version.
+#define DOKAN_VERSION		600
+
+#define DOKAN_OPTION_DEBUG		1 // ouput debug message
+#define DOKAN_OPTION_STDERR		2 // ouput debug message to stderr
+#define DOKAN_OPTION_ALT_STREAM	4 // use alternate stream
+#define DOKAN_OPTION_KEEP_ALIVE	8 // use auto unmount
+#define DOKAN_OPTION_NETWORK	16 // use network drive, you need to install Dokan network provider.
+#define DOKAN_OPTION_REMOVABLE	32 // use removable drive
+
 typedef struct _DOKAN_OPTIONS {
-	WCHAR	DriveLetter; // drive letter to be mounted
+	USHORT	Version; // Supported Dokan Version, ex. "530" (Dokan ver 0.5.3)
 	USHORT	ThreadCount; // number of threads to be used
-	UCHAR	DebugMode; // ouput debug message
-	UCHAR	UseStdErr; // ouput debug message to stderr
-	UCHAR	UseAltStream; // use alternate stream
-	UCHAR	UseKeepAlive; // use auto unmount
+	ULONG	Options;	 // combination of DOKAN_OPTIONS_*
 	ULONG64	GlobalContext; // FileSystem can use this variable
+	LPCWSTR	MountPoint; //  mount point "M:\" (drive letter) or "C:\mount\dokan" (path in NTFS)
 } DOKAN_OPTIONS, *PDOKAN_OPTIONS;
 
 typedef struct _DOKAN_FILE_INFO {
 	ULONG64	Context;      // FileSystem can use this variable
 	ULONG64	DokanContext; // Don't touch this
+	PDOKAN_OPTIONS DokanOptions; // A pointer to DOKAN_OPTIONS which was  passed to DokanMain.
 	ULONG	ProcessId;    // process id for the thread that originally requested a given I/O operation
 	UCHAR	IsDirectory;  // requesting a directory file
 	UCHAR	DeleteOnClose; // Delete on when "cleanup" is called
-	PDOKAN_OPTIONS DokanOptions;
+	UCHAR	PagingIo;	// Read or write is paging IO.
+	UCHAR	SynchronousIo;  // Read or write is synchronous IO.
+	UCHAR	Nocache;
+	UCHAR	WriteToEndOfFile; //  If true, write to the current end of file instead of Offset parameter.
+
 } DOKAN_FILE_INFO, *PDOKAN_FILE_INFO;
 
 
@@ -80,7 +97,6 @@ typedef struct _DOKAN_OPERATIONS {
 		DWORD,        // ShareMode
 		DWORD,        // CreationDisposition
 		DWORD,        // FlagsAndAttributes
-		//HANDLE,       // TemplateFile
 		PDOKAN_FILE_INFO);
 
 	int (DOKAN_CALLBACK *OpenDirectory) (
@@ -135,7 +151,7 @@ typedef struct _DOKAN_OPERATIONS {
 		PDOKAN_FILE_INFO);  //  (see PFillFindData definition)
 
 
-	// You should implement either FindFires or FindFilesWithPattern
+	// You should implement either FindFiles or FindFilesWithPattern
 	int (DOKAN_CALLBACK *FindFilesWithPattern) (
 		LPCWSTR,			// PathName
 		LPCWSTR,			// SearchPattern
@@ -159,11 +175,12 @@ typedef struct _DOKAN_OPERATIONS {
 
 	// You should not delete file on DeleteFile or DeleteDirectory.
 	// When DeleteFile or DeleteDirectory, you must check whether
-	// you can delete or not, and return 0 (when you can delete it)
+	// you can delete the file or not, and return 0 (when you can delete it)
 	// or appropriate error codes such as -ERROR_DIR_NOT_EMPTY,
 	// -ERROR_SHARING_VIOLATION.
 	// When you return 0 (ERROR_SUCCESS), you get Cleanup with
-	// FileInfo->DeleteOnClose set TRUE, you delete the file.
+	// FileInfo->DeleteOnClose set TRUE and you have to delete the
+	// file in Close.
 	int (DOKAN_CALLBACK *DeleteFile) (
 		LPCWSTR, // FileName
 		PDOKAN_FILE_INFO);
@@ -181,6 +198,12 @@ typedef struct _DOKAN_OPERATIONS {
 
 
 	int (DOKAN_CALLBACK *SetEndOfFile) (
+		LPCWSTR,  // FileName
+		LONGLONG, // Length
+		PDOKAN_FILE_INFO);
+
+
+	int (DOKAN_CALLBACK *SetAllocationSize) (
 		LPCWSTR,  // FileName
 		LONGLONG, // Length
 		PDOKAN_FILE_INFO);
@@ -216,17 +239,35 @@ typedef struct _DOKAN_OPERATIONS {
 	// see Win32 API GetVolumeInformation
 	int (DOKAN_CALLBACK *GetVolumeInformation) (
 		LPWSTR, // VolumeNameBuffer
-		DWORD,	// VolumeNameSize
+		DWORD,	// VolumeNameSize in num of chars
 		LPDWORD,// VolumeSerialNumber
-		LPDWORD,// MaximumComponentLength
+		LPDWORD,// MaximumComponentLength in num of chars
 		LPDWORD,// FileSystemFlags
 		LPWSTR,	// FileSystemNameBuffer
-		DWORD,	// FileSystemNameSize
+		DWORD,	// FileSystemNameSize in num of chars
 		PDOKAN_FILE_INFO);
 
 
 	int (DOKAN_CALLBACK *Unmount) (
 		PDOKAN_FILE_INFO);
+
+
+	// Suported since 0.6.0. You must specify the version at DOKAN_OPTIONS.Version.
+	int (DOKAN_CALLBACK *GetFileSecurity) (
+		LPCWSTR, // FileName
+		PSECURITY_INFORMATION, // A pointer to SECURITY_INFORMATION value being requested
+		PSECURITY_DESCRIPTOR, // A pointer to SECURITY_DESCRIPTOR buffer to be filled
+		ULONG, // length of Security descriptor buffer
+		PULONG, // LengthNeeded
+		PDOKAN_FILE_INFO);
+
+	int (DOKAN_CALLBACK *SetFileSecurity) (
+		LPCWSTR, // FileName
+		PSECURITY_INFORMATION,
+		PSECURITY_DESCRIPTOR, // SecurityDescriptor
+		ULONG, // SecurityDescriptor length
+		PDOKAN_FILE_INFO);
+
 
 } DOKAN_OPERATIONS, *PDOKAN_OPERATIONS;
 
@@ -238,8 +279,8 @@ typedef struct _DOKAN_OPERATIONS {
 #define DOKAN_DRIVE_LETTER_ERROR	-2 /* Bad Drive letter */
 #define DOKAN_DRIVER_INSTALL_ERROR	-3 /* Can't install driver */
 #define DOKAN_START_ERROR			-4 /* Driver something wrong */
-#define DOKAN_MOUNT_ERROR			-5 /* Can't assign a drive letter */
-
+#define DOKAN_MOUNT_ERROR			-5 /* Can't assign a drive letter or mount point */
+#define DOKAN_MOUNT_POINT_ERROR		-6 /* Mount point is invalid */
 
 int DOKANAPI
 DokanMain(
@@ -249,7 +290,11 @@ DokanMain(
 
 BOOL DOKANAPI
 DokanUnmount(
-	WCHAR DriveLetter);
+	WCHAR	DriveLetter);
+
+BOOL DOKANAPI
+DokanRemoveMountPoint(
+	LPCWSTR MountPoint);
 
 
 // DokanIsNameInExpression
@@ -268,19 +313,19 @@ DokanVersion();
 ULONG DOKANAPI
 DokanDriverVersion();
 
-
-// for internal use
-// don't call
+// DokanResetTimeout
+//   extends the time out of the current IO operation in driver.
 BOOL DOKANAPI
-DokanServiceInstall(
-	LPCWSTR	ServiceName,
-	DWORD	ServiceType,
-	LPCWSTR ServiceFullPath);
+DokanResetTimeout(
+	ULONG				Timeout,	// timeout in millisecond
+	PDOKAN_FILE_INFO	DokanFileInfo);
 
-BOOL DOKANAPI
-DokanServiceDelete(
-	LPCWSTR	ServiceName);
-
+// Get the handle to Access Token
+// This method needs be called in CreateFile, OpenDirectory or CreateDirectly callback.
+// The caller must call CloseHandle for the returned handle.
+HANDLE DOKANAPI
+DokanOpenRequestorToken(
+	PDOKAN_FILE_INFO	DokanFileInfo);
 
 #ifdef __cplusplus
 }
