@@ -2,7 +2,6 @@ import myWin32file
 import errno
 from tools import *
 import stat
-from logSys import *
 import ctypes
 
 class unlinkSupport:
