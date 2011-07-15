@@ -8,7 +8,7 @@ CreateDirectoryFuncType = WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)
 CleanupFuncType = WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)
 CloseFileFuncType = WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)
 ReadFileFuncType = WINFUNCTYPE(c_int, LPCWSTR, LPVOID, DWORD, LPVOID, LONGLONG, PDOKAN_FILE_INFO)
-WriteFileFuncType = WINFUNCTYPE(c_int, LPCWSTR, LPCVOID, DWORD, LPDWORD, LONGLONG, PDOKAN_FILE_INFO)
+WriteFileFuncType = WINFUNCTYPE(c_int, LPCWSTR, LPCVOID, DWORD, LPVOID, LONGLONG, PDOKAN_FILE_INFO)
 FlushFileBuffersFuncType = WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)
 GetFileInformationFuncType = WINFUNCTYPE(c_int, LPCWSTR, LPBY_HANDLE_FILE_INFORMATION, PDOKAN_FILE_INFO)
 FindFilesFuncType = WINFUNCTYPE(c_int, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)
@@ -97,7 +97,7 @@ class fuseBase:
     def ReadFileFunc(self, FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, LPVOID, DWORD, LPDWORD, LONGLONG, PDOKAN_FILE_INFO)),
     def WriteFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, LPCVOID, DWORD, LPDWORD, LONGLONG, PDOKAN_FILE_INFO)),
+        return 0# WINFUNCTYPE(c_int, LPCWSTR, LPCVOID, DWORD, LPVOID, LONGLONG, PDOKAN_FILE_INFO)),
     def FlushFileBuffersFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
         return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
     def GetFileInformationFunc(self, FileName, Buffer, pInfo):
@@ -146,7 +146,7 @@ class fuseBase:
             CleanupFuncType(self.CleanupFunc),# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
             CloseFileFuncType(self.CloseFileFunc),# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
             ReadFileFuncType(self.ReadFileFunc),# WINFUNCTYPE(c_int, LPCWSTR, LPVOID, DWORD, LPDWORD, LONGLONG, PDOKAN_FILE_INFO)),
-            WriteFileFuncType(self.WriteFileFunc),# WINFUNCTYPE(c_int, LPCWSTR, LPCVOID, DWORD, LPDWORD, LONGLONG, PDOKAN_FILE_INFO)),
+            WriteFileFuncType(self.WriteFileFunc),# WINFUNCTYPE(c_int, LPCWSTR, LPCVOID, DWORD, LPVOID, LONGLONG, PDOKAN_FILE_INFO)),
             FlushFileBuffersFuncType(self.FlushFileBuffersFunc),# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
             GetFileInformationFuncType(self.GetFileInformationFunc),# WINFUNCTYPE(c_int, LPCWSTR, LPBY_HANDLE_FILE_INFORMATION, PDOKAN_FILE_INFO)),
             FindFilesFuncType(self.FindFilesFunc),# WINFUNCTYPE(c_int, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)),
