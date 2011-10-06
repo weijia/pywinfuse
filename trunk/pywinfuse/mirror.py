@@ -48,6 +48,7 @@ class mirrorFs(Fuse):
       realP = baseFilesys + path
       #print realP
       return realP
+
     def getattr(self, path):
       #print 'get path attr', path
       st = MyStat()
@@ -68,6 +69,13 @@ class mirrorFs(Fuse):
         for r in os.listdir(self.getPath(path)):
             yield fuse.Direntry(r)
 
+    def create(self, path):
+        try:
+            open(self.getPath(path), 'w').close()
+            return 0
+        except:
+            raise
+
     def open(self, path, flags):
         #print 'calling open'
         if self.getattr(path) == -errno.ENOENT:
@@ -75,6 +83,7 @@ class mirrorFs(Fuse):
         accmode = os.O_RDONLY | os.O_WRONLY | os.O_RDWR
         if (flags & accmode) != os.O_RDONLY:
             return -errno.EACCES
+        return 0
 
     def read(self, path, size, offset):
         if self.getattr(path) == -errno.ENOENT:
@@ -92,20 +101,25 @@ class mirrorFs(Fuse):
             os.mkdir(self.getPath(path))
         except:
             return -errno.ENOSYS
+        return 0
+
     def rename(self, oldPath, newPath):
         os.rename(self.getPath(oldPath), self.getPath(newPath))
+        return 0
         
     def unlink(self, path):
         try:
           os.remove(self.getPath(path))
         except WindowsError:
           return -errno.ENOTEMPTY
+        return 0
         
     def rmdir(self, path):
         try:
           os.rmdir(self.getPath(path))
         except WindowsError:
           return -errno.ENOTEMPTY
+        return 0
     def write(self, path, buf, offset):
         if self.getattr(path) == -errno.ENOENT:
             return -errno.ENOENT
@@ -114,6 +128,7 @@ class mirrorFs(Fuse):
         f.seek(offset)
         f.write(buf)
         f.close()
+        return 0
           
 def main():
     usage="""
