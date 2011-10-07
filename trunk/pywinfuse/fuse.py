@@ -11,6 +11,14 @@ import errno
 import os
 import re
 __version__ = '0.1'
+
+def feature_assert(section, feature):
+    return True
+
+@property
+def FUSE_PYTHON_API_VERSION():
+    return __version__.split('.')
+
 # functions
 def whoami():
     return inspect.stack()[1][3]
