@@ -48,7 +48,7 @@ class openSupport:
         (myWin32file.CREATE_ALWAYS == CreationDisposition) or\
         (myWin32file.OPEN_ALWAYS == CreationDisposition) or\
         (mymyWin32file.TRUNCATE_EXISTING == CreationDisposition):
-        return self.checkError(self.create(unixFilename))
+        return self.checkError(self.create_wrapper(unixFilename))
     return 0
   
   def getattrWrapper(self, path):

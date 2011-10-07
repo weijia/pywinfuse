@@ -39,7 +39,7 @@ class writeSupport:
     #dbg()
     unixFilename = self.translateFileName(FileName)
     realBuf = ctypes.string_at(Buffer, NumberOfBytesToWrite)
-    writtenLen = self.write(unixFilename, realBuf, Offset)
+    writtenLen = self.write_wrapper(unixFilename, realBuf, Offset)
     if writtenLen < 0:
       return -myWin32file.ERROR_FILE_NOT_FOUND
     setDwordByPoint(NumberOfBytesWritten, writtenLen)

@@ -321,7 +321,7 @@ fuse_python_api = None
 
 class fuseBase:
     fusage = 'no usage currently'
-    def __init__(self, usage = '', dash_s_do = '', version = '', debug = 0):
+    def __init__(self, usage = '', dash_s_do = '', version = '', debug = 0, file_class = None):
         #The following is used to be compitable with Linux Fuse Python binding
         self.flags = 0
         self.multithreaded = 0
@@ -329,6 +329,7 @@ class fuseBase:
         self.optdict = fuseOptDict()
         self.fuse_args = FuseArgs()
         self.parser = FuseOptParse()
+        self.file_class = file_class
         if debug != 1:
             self.debug = c_ubyte(0)
         else:
@@ -353,6 +354,37 @@ class fuseBase:
     def GetContext(self):
         # os.lstat always return 0 as uid and gid on windows.
         return { 'pid' : os.getpid(), 'uid' : 0, 'gid' : 0 }
+
+    '''
+    The following functions are used to be compatible,
+    with Linux Fuse Python file class feature.
+    '''
+    def create_wrapper(self, path):
+        if self.file_class:
+            # TODO: get open flags and mode from dokan CreateFileFunc arguments
+            file = self.file_class(path, os.O_CREAT | os.O_RDWR, mode=33152, **self.GetContext())
+            return file.release(os.O_RDWR)
+        else:
+            return self.create(path)
+
+    def read_wrapper(self, path, length, offset):
+        if self.file_class:
+            # TODO: get open flags and mode from dokan CreateFileFunc arguments
+            file = self.file_class(path, os.O_RDONLY, **self.GetContext())
+            buf = file.read(length, offset)
+            file.release(os.O_RDONLY)
+            return buf
+        else:
+            return self.read(path, length, offset)
+
+    def write_wrapper(self, path, new_data, offset):
+        if self.file_class:
+            # TODO: get open flags and mode from dokan CreateFileFunc arguments
+            file = self.file_class(path, os.O_RDWR | os.O_APPEND, **self.GetContext())
+            file.write(new_data, offset)
+            return file.release(os.O_RDWR | os.O_APPEND)
+        else:
+            return self.write(path, new_data, offset)
 
     '''
     The following functions are interface function defined in dokan.

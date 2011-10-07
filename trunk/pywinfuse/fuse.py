@@ -81,7 +81,7 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
     unixFilename = FileName.replace('\\','/')
     if self.getattr(unixFilename).st_mode & stat.S_IFDIR:
       return -myWin32file.ERROR_FILE_NOT_FOUND
-    data = self.read(unixFilename, NumberOfBytesToRead, Offset)
+    data = self.read_wrapper(unixFilename, NumberOfBytesToRead, Offset)
     if data == -errno.ENOENT:
       print 'data not exist', FileName
       return -myWin32file.ERROR_FILE_NOT_FOUND
