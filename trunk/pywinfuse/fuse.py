@@ -70,9 +70,18 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
   def CleanupFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
     dbg()
     return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-  def CloseFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-    dbg()
-    return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+
+  def release(self, path, flags):
+    print '*** release', path, flags
+    return -errno.ENOSYS
+  def CloseFileFunc(self, FileName, pInfo):
+    #dbg()
+    unixFilename = FileName.replace('\\','/')
+
+    if self.checkError(self.getattrWrapper(unixFilename)) != 0:
+      return -myWin32file.ERROR_FILE_NOT_FOUND
+
+    return self.checkError(self.release_wrapper(unixFilename, pInfo))
   
   def ReadFileFunc(self, FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo):
     #dbgP(FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo)
@@ -81,7 +90,7 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
     unixFilename = FileName.replace('\\','/')
     if self.getattr(unixFilename).st_mode & stat.S_IFDIR:
       return -myWin32file.ERROR_FILE_NOT_FOUND
-    data = self.read_wrapper(unixFilename, NumberOfBytesToRead, Offset)
+    data = self.read_wrapper(unixFilename, NumberOfBytesToRead, Offset, pInfo)
     if data == -errno.ENOENT:
       print 'data not exist', FileName
       return -myWin32file.ERROR_FILE_NOT_FOUND
@@ -265,10 +274,6 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
   def SetFileTimeFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
     dbg()
     return 0# WINFUNCTYPE(c_int, LPCWSTR, POINTER(FILETIME), POINTER(FILETIME), POINTER(FILETIME), PDOKAN_FILE_INFO)),
-
-  def SetEndOfFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
-    dbg()
-    return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, PDOKAN_FILE_INFO)),
   def LockFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
     dbg()
     return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),

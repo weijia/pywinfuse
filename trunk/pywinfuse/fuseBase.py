@@ -1,6 +1,9 @@
 
 import os
 import sys
+import errno
+
+import myWin32file
 
 from ctypes import *
 from dokan import *
@@ -321,6 +324,8 @@ fuse_python_api = None
 
 class fuseBase:
     fusage = 'no usage currently'
+    file_class_instances = dict()
+
     def __init__(self, usage = '', dash_s_do = '', version = '', debug = 0, file_class = None):
         #The following is used to be compitable with Linux Fuse Python binding
         self.flags = 0
@@ -354,37 +359,64 @@ class fuseBase:
     def GetContext(self):
         # os.lstat always return 0 as uid and gid on windows.
         return { 'pid' : os.getpid(), 'uid' : 0, 'gid' : 0 }
-
+        
     '''
     The following functions are used to be compatible,
     with Linux Fuse Python file class feature.
     '''
-    def create_wrapper(self, path):
-        if self.file_class:
-            # TODO: get open flags and mode from dokan CreateFileFunc arguments
-            file = self.file_class(path, os.O_CREAT | os.O_RDWR, mode=33152, **self.GetContext())
-            return file.release(os.O_RDWR)
-        else:
-            return self.create(path)
+    def open_wrapper(self, path, flags, pInfo, mode=None):
+        flags = flags | os.O_BINARY
 
-    def read_wrapper(self, path, length, offset):
         if self.file_class:
-            # TODO: get open flags and mode from dokan CreateFileFunc arguments
-            file = self.file_class(path, os.O_RDONLY, **self.GetContext())
-            buf = file.read(length, offset)
-            file.release(os.O_RDONLY)
-            return buf
+            try:
+                self.file_class_instances[pInfo.contents.DokanContext] = self.file_class(path, flags, mode=mode, **self.GetContext())
+
+                flags = flags & (~os.O_TRUNC)
+                flags = flags & (~os.O_CREAT)
+                pInfo.contents.Context = flags
+
+            except Exception, e:
+                print e
+
+            return 0
+
         else:
+            return self.open(path, flags)
+
+    def read_wrapper(self, path, length, offset, pInfo):
+        if self.file_class_instances.has_key(pInfo.contents.DokanContext):
+            return self.file_class_instances[pInfo.contents.DokanContext].read(length, offset)
+
+        elif not self.file_class:
             return self.read(path, length, offset)
 
-    def write_wrapper(self, path, new_data, offset):
-        if self.file_class:
-            # TODO: get open flags and mode from dokan CreateFileFunc arguments
-            file = self.file_class(path, os.O_RDWR | os.O_APPEND, **self.GetContext())
-            file.write(new_data, offset)
-            return file.release(os.O_RDWR | os.O_APPEND)
-        else:
+    def write_wrapper(self, path, new_data, offset, pInfo):
+        if self.file_class_instances.has_key(pInfo.contents.DokanContext):
+            return self.file_class_instances[pInfo.contents.DokanContext].write(new_data, offset)
+
+        elif not self.file_class:
             return self.write(path, new_data, offset)
+
+    def ftruncate_wrapper(self, path, offset, pInfo):
+        if self.file_class_instances.has_key(pInfo.contents.DokanContext):
+            return self.file_class_instances[pInfo.contents.DokanContext].ftruncate(offset)
+
+        elif not self.file_class:
+            return self.ftruncate(path, offset)
+
+    def release_wrapper(self, path, pInfo):
+        if self.file_class_instances.has_key(pInfo.contents.DokanContext):
+            try:
+                self.file_class_instances[pInfo.contents.DokanContext].release(pInfo.contents.Context)
+                del self.file_class_instances[pInfo.contents.DokanContext]
+
+            except Exception, e:
+                print e
+
+            return 0
+
+        elif not self.file_class:
+            return self.release(path, os.O_RDWR)
 
     '''
     The following functions are interface function defined in dokan.
@@ -397,7 +429,7 @@ class fuseBase:
         return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
     def CleanupFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-    def CloseFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
+    def CloseFileFunc(self, FileName, pInfo):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
     def ReadFileFunc(self, FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, LPVOID, DWORD, LPDWORD, LONGLONG, PDOKAN_FILE_INFO)),
@@ -421,7 +453,7 @@ class fuseBase:
         return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
     def MoveFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
         return 0# WINFUNCTYPE(c_int, LPCWSTR, LPCWSTR, BOOL, PDOKAN_FILE_INFO)),
-    def SetEndOfFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
+    def SetEndOfFileFunc(self, FileName, offset, pInfo):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, PDOKAN_FILE_INFO)),
     def SetAllocationSizeFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
         return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, PDOKAN_FILE_INFO)),

@@ -1,4 +1,5 @@
 import myWin32file
+import os
 import errno
 from fuseBase import *
 '''
@@ -11,7 +12,7 @@ import sys, traceback
 
 
 class openSupport:
-  def create(*args):
+  def open(*args):
     pass
   '''
   def setDirFlag(pInfo):
@@ -31,25 +32,46 @@ class openSupport:
     #dbgP(FileName,DesiredAccess,ShareMode,CreationDisposition,FlagsAndAttributes, pInfo)
     #print 'new create file fun called'
     unixFilename = FileName.replace('\\','/')
-    if FileName == '/':
-      pInfo.IsDirectory = 1
+
+    flags = os.O_RDONLY
+    if (myWin32file.CREATE_NEW == CreationDisposition):
+        flags = flags | os.O_CREAT
+
+    if (myWin32file.TRUNCATE_EXISTING == CreationDisposition or
+        myWin32file.CREATE_ALWAYS == CreationDisposition or
+        myWin32file.OPEN_ALWAYS == CreationDisposition):
+        flags = flags | os.O_TRUNC
+
+    if (DesiredAccess & myWin32file.GENERIC_WRITE or
+        DesiredAccess & myWin32file.FILE_WRITE_DATA):
+        if (DesiredAccess & myWin32file.GENERIC_READ or 
+            DesiredAccess & myWin32file.FILE_READ_DATA):
+            flags = flags | os.O_RDWR
+        else:
+            flags = flags | os.O_WRONLY
+    
+        if DesiredAccess & myWin32file.FILE_APPEND_DATA:
+            flags = flags | os.O_APPEND
+    
     #print unixFilename
     #Check the existance of the file
+    mode = None
     if self.checkError(self.getattrWrapper(unixFilename)) == 0:
-      #File exist, check if we need to fail when the file exists
-      if (myWin32file.CREATE_NEW == CreationDisposition):
-        return -myWin32file.ERROR_FILE_NOT_FOUND
+        #File exist, check if we need to fail when the file exists
+        if (myWin32file.CREATE_NEW == CreationDisposition):
+            return -myWin32file.ERROR_FILE_EXISTS
+
+        if os.path.isdir(unixFilename) or unixFilename == '/':# or pInfo.contents.IsDirectory:
+            return 0
+
     else:
-      if (myWin32file.OPEN_EXISTING == CreationDisposition) or\
-        (myWin32file.TRUNCATE_EXISTING == CreationDisposition):
-        return -myWin32file.ERROR_FILE_NOT_FOUND
-      #Create the file if required
-      if (myWin32file.CREATE_NEW == CreationDisposition) or\
-        (myWin32file.CREATE_ALWAYS == CreationDisposition) or\
-        (myWin32file.OPEN_ALWAYS == CreationDisposition) or\
-        (mymyWin32file.TRUNCATE_EXISTING == CreationDisposition):
-        return self.checkError(self.create_wrapper(unixFilename))
-    return 0
+        if (myWin32file.OPEN_EXISTING == CreationDisposition or
+            myWin32file.TRUNCATE_EXISTING == CreationDisposition):
+            return -myWin32file.ERROR_FILE_NOT_FOUND
+
+        mode = 33152
+
+    return self.checkError(self.open_wrapper(unixFilename, flags, pInfo, mode))
   
   def getattrWrapper(self, path):
     '''#Is this needed? gmailfs will not handle '/'?
