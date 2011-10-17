@@ -280,24 +280,38 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
   def UnlockFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
     dbg()
     return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),
+
   def GetDiskFreeSpaceFunc(self, pFreeBytesAvailable, pTotalNumberOfBytes, pTotalNumberOfFreeBytes, pInfo):
-    FreeBytesAvailable = 0x1000000000000L
-    TotalNumberOfBytes = 0x4000000000000L#256M=256*1024*1024
-    TotalNumberOfFreeBytes = 0x1000000000000L
+    try:
+        vfs = self.statfs()
+        FreeBytesAvailable = vfs.f_bfree * vfs.f_bsize
+        TotalNumberOfBytes = vfs.f_blocks * vfs.f_bsize
+        TotalNumberOfFreeBytes = vfs.f_bfree * vfs.f_bsize
+
+    except Exception, e:
+        print e
+        FreeBytesAvailable = 0x1000000000000L
+        TotalNumberOfBytes = 0x4000000000000L#256M=256*1024*1024
+        TotalNumberOfFreeBytes = 0x1000000000000L
+
     setLongLongByPoint(pFreeBytesAvailable, FreeBytesAvailable)
     setLongLongByPoint(pTotalNumberOfBytes, TotalNumberOfBytes)
     setLongLongByPoint(pTotalNumberOfFreeBytes, TotalNumberOfFreeBytes)
     return 0# WINFUNCTYPE(c_int, PULONGLONG, PULONGLONG, PULONGLONG, PDOKAN_FILE_INFO)),
+        
   def GetVolumeInformationFunc(self, VolumeNameBuffer, VolumeNameSize, VolumeSerialNumber, 
-      MaximumComponentLength, FileSystemFlags, FileSystemNameBuffer, FileSystemNameSize, pInfo):
+                               MaximumComponentLength, FileSystemFlags, FileSystemNameBuffer,
+                               FileSystemNameSize, pInfo):
     #log(VolumeNameBuffer, VolumeNameSize, VolumeSerialNumber, 
     #MaximumComponentLength, FileSystemFlags, FileSystemNameBuffer, FileSystemNameSize, pInfo)
-    memmove(VolumeNameBuffer, u'my own volumne', min(VolumeNameSize, len(u'my own volumne')))
+    fsname = unicode(self.fsname)
+    memmove(VolumeNameBuffer, fsname, 2 * (len(fsname) + 1))
     VolumeSerialNumber = 0
     MaximumComponentLength = 0
     FileSystemFlags = 0
-    memmove(FileSystemNameBuffer, u'wwj', min(FileSystemNameSize, 2*len(u'wwj')))
+    memmove(FileSystemNameBuffer, u'PyWinFuse', 2 * (len(u'PyWinFuse') + 1))
     return 0# WINFUNCTYPE(c_int, LPWSTR, DWORD, LPDWORD, LPDWORD, LPDWORD, LPWSTR, DWORD, PDOKAN_FILE_INFO)),
+
   def UnmountFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
     dbg()
     return 0# WINFUNCTYPE(c_int, PDOKAN_FILE_INFO)),

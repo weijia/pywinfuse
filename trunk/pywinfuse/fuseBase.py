@@ -328,6 +328,7 @@ class fuseBase:
 
     def __init__(self, usage = '', dash_s_do = '', version = '', debug = 0, file_class = None):
         #The following is used to be compitable with Linux Fuse Python binding
+        self.fsname = u"DOKAN"
         self.flags = 0
         self.multithreaded = 0
         self.allow_other = 0
