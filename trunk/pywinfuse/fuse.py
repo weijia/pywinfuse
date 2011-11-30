@@ -1,15 +1,23 @@
 #from pywinfuse import *
 from ctypes import *
-from dokan import *
+
 #from myLogger import *
-from tools import *
 import inspect
-from fuseBase import *
-import myWin32file
 import stat
 import errno
 import os
 import re
+
+try:
+    from pywinfuse import *
+except ImportError, e:
+    from dokan import *
+    from tools import *
+    from fuseBase import *
+    from fuseOpen import *
+    from fuseUnlink import *
+    import myWin32file
+
 __version__ = '0.1'
 
 def feature_assert(section, feature):
@@ -53,8 +61,7 @@ def cre(CreationDisposition):
     return myWin32file.ERROR_ALREADY_EXISTS
   return 0
 
-from fuseOpen import *
-from fuseUnlink import *
+
 class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
   def translateFileName(self, FileName):
     return FileName.replace('\\','/')
@@ -119,13 +126,14 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
     #log(FileName, Buffer, pInfo)
     unixFilename = FileName.replace('\\','/')
     st = self.getattrWrapper(unixFilename)
+    
     if st != -errno.ENOENT:
       '''
-      Buffer = _BY_HANDLE_FILE_INFORMATION(
+      Buffer = BY_HANDLE_FILE_INFORMATION(
         self.translateModeFromUnix(st),#('dwFileAttributes', DWORD),
-        _FILETIME(0,0),#('ftCreationTime', FILETIME),2 DWORD
-        _FILETIME(0,0),#('ftLastAccessTime', FILETIME),
-        _FILETIME(0,0),#('ftLastWriteTime', FILETIME),
+        FILETIME(0,0),#('ftCreationTime', FILETIME),2 DWORD
+        FILETIME(0,0),#('ftLastAccessTime', FILETIME),
+        FILETIME(0,0),#('ftLastWriteTime', FILETIME),
         0,#('dwVolumeSerialNumber', DWORD),
         st.st_size,#('nFileSizeHigh', DWORD),
         st.st_size,#('nFileSizeLow', DWORD),
@@ -154,11 +162,11 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
     print 'finding files in: %s'%PathName
     unixFilename = PathName.replace('\\','/')
     offset = 0
-    Buffer = _BY_HANDLE_FILE_INFORMATION(
+    Buffer = BY_HANDLE_FILE_INFORMATION(
       0,#('dwFileAttributes', DWORD),
-      _FILETIME(0,0),#('ftCreationTime', FILETIME),
-      _FILETIME(0,0),#('ftLastAccessTime', FILETIME),
-      _FILETIME(0,0),#('ftLastWriteTime', FILETIME),
+      FILETIME(0,0),#('ftCreationTime', FILETIME),
+      FILETIME(0,0),#('ftLastAccessTime', FILETIME),
+      FILETIME(0,0),#('ftLastWriteTime', FILETIME),
       0,#('dwVolumeSerialNumber', DWORD),
       0,#('nFileSizeHigh', DWORD),
       0,#('nFileSizeLow', DWORD),
@@ -185,11 +193,11 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
       else:
         continue
       #print 'Buffer.nFileSizeLow', Buffer.nFileSizeLow
-      he = _WIN32_FIND_DATAW(
+      he = WIN32_FIND_DATAW(
         Buffer.dwFileAttributes,#('dwFileAttributes', DWORD),#0
-        _FILETIME(0,0),#('ftCreationTime', FILETIME),#4
-        _FILETIME(0,0),#('ftLastAccessTime', FILETIME),#12
-        _FILETIME(0,0),#('ftLastWriteTime', FILETIME),#20
+        FILETIME(0,0),#('ftCreationTime', FILETIME),#4
+        FILETIME(0,0),#('ftLastAccessTime', FILETIME),#12
+        FILETIME(0,0),#('ftLastWriteTime', FILETIME),#20
         0,#('nFileSizeHigh', DWORD),#28
         Buffer.nFileSizeLow,#('nFileSizeLow', DWORD),#32
         0,#('dwReserved0', DWORD),#36
@@ -211,11 +219,11 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
     #print 'finding files in: %s'%PathName
     unixFilename = PathName.replace('\\','/')
     offset = 0
-    Buffer = _BY_HANDLE_FILE_INFORMATION(
+    Buffer = BY_HANDLE_FILE_INFORMATION(
       0,#('dwFileAttributes', DWORD),
-      _FILETIME(0,0),#('ftCreationTime', FILETIME),
-      _FILETIME(0,0),#('ftLastAccessTime', FILETIME),
-      _FILETIME(0,0),#('ftLastWriteTime', FILETIME),
+      FILETIME(0,0),#('ftCreationTime', FILETIME),
+      FILETIME(0,0),#('ftLastAccessTime', FILETIME),
+      FILETIME(0,0),#('ftLastWriteTime', FILETIME),
       0,#('dwVolumeSerialNumber', DWORD),
       0,#('nFileSizeHigh', DWORD),
       0,#('nFileSizeLow', DWORD),
@@ -223,6 +231,7 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
       0,#('nFileIndexHigh', DWORD),
       0#('nFileIndexLow', DWORD),
       )
+
     for entry in self.readdir(unixFilename, offset):
       #entry = self.readdir(unixFilename, offset)
       #if entry == None:
@@ -237,6 +246,7 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
       finalPath = os.path.join(PathName, entry.getName())
       #print 'finalPath',finalPath
       unixFinal = finalPath.replace('\\','/')
+      
       st = self.getattrWrapper(unixFinal)
       if st != -errno.ENOENT:
         Buffer.dwFileAttributes = self.translateModeFromUnix(st)
@@ -246,11 +256,11 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
       else:
         continue
       #print 'Buffer.nFileSizeLow', Buffer.nFileSizeLow
-      he = _WIN32_FIND_DATAW(
+      he = WIN32_FIND_DATAW(
         Buffer.dwFileAttributes,#('dwFileAttributes', DWORD),#0
-        _FILETIME(0,0),#('ftCreationTime', FILETIME),#4
-        _FILETIME(0,0),#('ftLastAccessTime', FILETIME),#12
-        _FILETIME(0,0),#('ftLastWriteTime', FILETIME),#20
+        FILETIME(0,0),#('ftCreationTime', FILETIME),#4
+        FILETIME(0,0),#('ftLastAccessTime', FILETIME),#12
+        FILETIME(0,0),#('ftLastWriteTime', FILETIME),#20
         0,#('nFileSizeHigh', DWORD),#28
         Buffer.nFileSizeLow,#('nFileSizeLow', DWORD),#32
         0,#('dwReserved0', DWORD),#36
