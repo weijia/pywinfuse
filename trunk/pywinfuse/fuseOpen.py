@@ -1,5 +1,6 @@
 import myWin32file
 import os
+import stat
 import errno
 from fuseBase import *
 '''
@@ -56,12 +57,14 @@ class openSupport:
     #print unixFilename
     #Check the existance of the file
     mode = None
-    if self.checkError(self.getattrWrapper(unixFilename)) == 0:
+    stats = self.getattrWrapper(unixFilename)
+    if self.checkError(stats) == 0:
         #File exist, check if we need to fail when the file exists
         if (myWin32file.CREATE_NEW == CreationDisposition):
             return -myWin32file.ERROR_FILE_EXISTS
 
-        if os.path.isdir(unixFilename) or unixFilename == '/':# or pInfo.contents.IsDirectory:
+        if stat.S_ISDIR(stats.st_mode):
+            pInfo.contents.IsDirectory = 1
             return 0
 
     else:
