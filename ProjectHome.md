@@ -1,0 +1,1 @@
+This is based on dokan, a project to provide FUSE function in windows. Please see http://dokan-dev.net/en/ for detail.
