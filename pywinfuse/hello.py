@@ -14,7 +14,7 @@ try:
 except ImportError:
     pass
 import fuse
-from fuse import Fuse
+from fuse import Fuse, Stat
 
 if not hasattr(fuse, '__version__'):
     raise RuntimeError("your fuse-py doesn't know of fuse.__version__, probably it's too old.")
@@ -25,24 +25,10 @@ hello_path = '/hello.txt'
 hello_str = 'Hello World!\n'.encode('utf8')
 
 
-class MyStat(fuse.Stat):
-    def __init__(self):
-        self.st_mode = 0
-        self.st_ino = 0
-        self.st_dev = 0
-        self.st_nlink = 0
-        self.st_uid = 0
-        self.st_gid = 0
-        self.st_size = 0
-        self.st_atime = 0
-        self.st_mtime = 0
-        self.st_ctime = 0
-
-
 class HelloFS(Fuse):
 
     def getattr(self, path):
-        st = MyStat()
+        st = Stat()
         if path == '/':
             st.st_mode = stat.S_IFDIR | 0o755
             st.st_nlink = 2

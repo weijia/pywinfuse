@@ -70,11 +70,11 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
         return 0  # WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
 
     def release(self, path, flags):
-        print('*** release', path, flags)
+        # print('*** release', path, flags)
         return -errno.ENOSYS
 
     def CloseFileFunc(self, FileName, pInfo):
-        dbg()
+        # dbg()
         unixFilename = FileName.replace('\\', '/')
 
         if self.checkError(self.getattrWrapper(unixFilename)) != 0:
@@ -83,6 +83,7 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
         return self.checkError(self.release_wrapper(unixFilename, pInfo))
 
     def ReadFileFunc(self, FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo):
+        # print("ReadFileFunc")
         dbgP(FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo)
         # Why the directory is read?
         # Todo: find why, now, check if it is dir first
@@ -326,11 +327,11 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
         return 0  # WINFUNCTYPE(c_int, PDOKAN_FILE_INFO)),
 
     def checkError(self, ret):
-        print("ret type:", type(ret))
-        if ret is None or isinstance(ret, Stat):
-            print('returning 0')
+        # print("ret type:", type(ret))
+        if ret is None or type(ret) is not int or ret >= 0:
+            # print('returning 0')
             return 0
         else:
             # print('returned value:', ret)
-            print(inspect.stack()[1][3])
+            # print(inspect.stack()[1][3])
             return -myWin32file.ERROR_FILE_NOT_FOUND

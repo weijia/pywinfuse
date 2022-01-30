@@ -1,4 +1,3 @@
-
 import os
 import sys
 import errno
@@ -25,7 +24,8 @@ GetFileInformationFuncType = WINFUNCTYPE(c_int, LPCWSTR, LPBY_HANDLE_FILE_INFORM
 FindFilesFuncType = WINFUNCTYPE(c_int, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)
 FindFilesWithPatternFuncType = WINFUNCTYPE(c_int, LPCWSTR, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)
 SetFileAttributesFuncType = WINFUNCTYPE(c_int, LPCWSTR, DWORD, PDOKAN_FILE_INFO)
-SetFileTimeFuncType = WINFUNCTYPE(c_int, LPCWSTR, POINTER(FILETIME), POINTER(FILETIME), POINTER(FILETIME), PDOKAN_FILE_INFO)
+SetFileTimeFuncType = WINFUNCTYPE(c_int, LPCWSTR, POINTER(FILETIME), POINTER(FILETIME), POINTER(FILETIME),
+                                  PDOKAN_FILE_INFO)
 DeleteFileFuncType = WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)
 DeleteDirectoryFuncType = WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)
 MoveFileFuncType = WINFUNCTYPE(c_int, LPCWSTR, LPCWSTR, BOOL, PDOKAN_FILE_INFO)
@@ -34,10 +34,12 @@ SetAllocationSizeFuncType = WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, PDOKAN_FILE_IN
 LockFileFuncType = WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)
 UnlockFileFuncType = WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)
 GetDiskFreeSpaceFuncType = WINFUNCTYPE(c_int, PULONGLONG, PULONGLONG, PULONGLONG, PDOKAN_FILE_INFO)
-GetVolumeInformationFuncType = WINFUNCTYPE(c_int, LPWSTR, DWORD, LPDWORD, LPDWORD, LPDWORD, LPWSTR, DWORD, PDOKAN_FILE_INFO)
+GetVolumeInformationFuncType = WINFUNCTYPE(c_int, LPWSTR, DWORD, LPDWORD, LPDWORD, LPDWORD, LPWSTR, DWORD,
+                                           PDOKAN_FILE_INFO)
 UnmountFuncType = WINFUNCTYPE(c_int, PDOKAN_FILE_INFO)
 GetFileSecurityFuncType = WINFUNCTYPE(c_int, LPWSTR, LPVOID, LPVOID, PULONG, ULONG, PDOKAN_FILE_INFO)
 SetFileSecurityFuncType = WINFUNCTYPE(c_int, LPWSTR, LPVOID, LPVOID, ULONG, PDOKAN_FILE_INFO)
+
 
 class Stat:
     def __init__(self):
@@ -116,7 +118,7 @@ class FuseArgs(SubOptsHive):
 
         opta = []
         for o, v in self.optdict.iteritems():
-                opta.append(o + '=' + v)
+            opta.append(o + '=' + v)
         opta.extend(self.optlist)
 
         if opta:
@@ -269,7 +271,6 @@ class FuseOptParse(SubbedOptParse):
             self.add_option('-s', action='callback', callback=dsdcb,
                             help=SUPPRESS_HELP)
 
-
     def exit(self, status=0, msg=None):
         if msg:
             sys.stderr.write(msg)
@@ -297,7 +298,7 @@ class FuseOptParse(SubbedOptParse):
         if 'mountopt' in attrs:
             if opts or 'subopt' in attrs:
                 raise OptParseError(
-                  "having options or specifying the `subopt' attribute conflicts with `mountopt' attribute")
+                    "having options or specifying the `subopt' attribute conflicts with `mountopt' attribute")
             opts = ('-o',)
             attrs['subopt'] = attrs.pop('mountopt')
             if not 'dest' in attrs:
@@ -309,25 +310,30 @@ class FuseOptParse(SubbedOptParse):
 class Direntry:
     def __init__(self, name):
         self.name = name
+
     def getName(self):
         return self.name
-        #return unicode(self.name).encode('utf-8')
-        return self.name.replace('/','\\')
+        # return unicode(self.name).encode('utf-8')
+        return self.name.replace('/', '\\')
+
 
 class fuseOptDict:
     def __init__(self):
         pass
+
     def copy(self):
         pass
 
+
 fuse_python_api = None
+
 
 class fuseBase:
     fusage = 'no usage currently'
     file_class_instances = dict()
 
-    def __init__(self, usage = '', dash_s_do = '', version = '', debug = 0, file_class = None):
-        #The following is used to be compitable with Linux Fuse Python binding
+    def __init__(self, usage='', dash_s_do='', version='', debug=0, file_class=None):
+        # The following is used to be compitable with Linux Fuse Python binding
         self.fsname = u"DOKAN"
         self.flags = 0
         self.multithreaded = 0
@@ -351,26 +357,28 @@ class fuseBase:
         try:
             self.cmdline = self.parser.parse_args(*args, **kw)
         except OptParseError:
-          if ev:
-              sys.exit(ev)
-          raise
+            if ev:
+                sys.exit(ev)
+            raise
 
         return self.fuse_args
 
     def GetContext(self):
         # os.lstat always return 0 as uid and gid on windows.
-        return { 'pid' : os.getpid(), 'uid' : 0, 'gid' : 0 }
+        return {'pid': os.getpid(), 'uid': 0, 'gid': 0}
 
     '''
     The following functions are used to be compatible,
     with Linux Fuse Python file class feature.
     '''
+
     def open_wrapper(self, path, flags, pInfo, mode=None):
         flags = flags | os.O_BINARY
 
         if self.file_class:
             try:
-                self.file_class_instances[pInfo.contents.DokanContext] = self.file_class(path, flags, mode=mode, **self.GetContext())
+                self.file_class_instances[pInfo.contents.DokanContext] = self.file_class(path, flags, mode=mode,
+                                                                                         **self.GetContext())
 
                 flags = flags & (~os.O_TRUNC)
                 flags = flags & (~os.O_CREAT)
@@ -422,58 +430,83 @@ class fuseBase:
     '''
     The following functions are interface function defined in dokan.
     '''
-    def CreateFileFunc(self, FileName, DesiredAccess, ShareMode, CreationDisposition, FlagsAndAttributes, pInfo):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, DWORD, DWORD, DWORD, DWORD, PDOKAN_FILE_INFO)
-    def OpenDirectoryFunc(self, FileName, pInfo):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)
-    def CreateDirectoryFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-    def CleanupFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-    def CloseFileFunc(self, FileName, pInfo):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-    def ReadFileFunc(self, FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, LPVOID, DWORD, LPDWORD, LONGLONG, PDOKAN_FILE_INFO)),
-    def WriteFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, LPCVOID, DWORD, LPVOID, LONGLONG, PDOKAN_FILE_INFO)),
-    def FlushFileBuffersFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-    def GetFileInformationFunc(self, FileName, Buffer, pInfo):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, LPBY_HANDLE_FILE_INFORMATION, PDOKAN_FILE_INFO)),
-    def FindFilesFunc(self, PathName, PFillFindData, pInfo):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)),
-    def FindFilesWithPatternFunc(self, PathName, SearchPattern, PFillFindData, pInfo):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)),
-    def SetFileAttributesFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, DWORD, PDOKAN_FILE_INFO)),
-    def SetFileTimeFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, POINTER(FILETIME), POINTER(FILETIME), POINTER(FILETIME), PDOKAN_FILE_INFO)),
-    def DeleteFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-    def DeleteDirectoryFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-    def MoveFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, LPCWSTR, BOOL, PDOKAN_FILE_INFO)),
-    def SetEndOfFileFunc(self, FileName, offset, pInfo):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, PDOKAN_FILE_INFO)),
-    def SetAllocationSizeFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, PDOKAN_FILE_INFO)),
-    def LockFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),
-    def UnlockFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-        return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),
-    def GetDiskFreeSpaceFunc(self, FreeBytesAvailable, TotalNumberOfBytes, TotalNumberOfFreeBytes, pInfo):
-        return 0# WINFUNCTYPE(c_int, PULONGLONG, PULONGLONG, PULONGLONG, PDOKAN_FILE_INFO)),
-    def GetVolumeInformationFunc(self, VolumeNameBuffer, VolumeNameSize, VolumeSerialNumber,
-            MaximumComponentLength, FileSystemFlags, FileSystemNameBuffer, FileSystemNameSize, pInfo):
-        return 0# WINFUNCTYPE(c_int, LPWSTR, DWORD, LPDWORD, LPDWORD, LPDWORD, LPWSTR, DWORD, PDOKAN_FILE_INFO)),
-    def UnmountFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-        return 0# WINFUNCTYPE(c_int, PDOKAN_FILE_INFO)),
-    def GetFileSecurityFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-        return 0# WINFUNCTYPE(c_int, PDOKAN_FILE_INFO)),
-    def SetFileSecurityFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
-        return 0# WINFUNCTYPE(c_int, PDOKAN_FILE_INFO)),
 
+    def CreateFileFunc(self, FileName, DesiredAccess, ShareMode, CreationDisposition, FlagsAndAttributes, pInfo):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, DWORD, DWORD, DWORD, DWORD, PDOKAN_FILE_INFO)
+
+    def OpenDirectoryFunc(self, FileName, pInfo):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)
+
+    def CreateDirectoryFunc(self, pInfo, a='', b='', c='', d='', e='', f='', g='', i='', j='', k=''):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+
+    def CleanupFunc(self, pInfo, a='', b='', c='', d='', e='', f='', g='', i='', j='', k=''):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+
+    def CloseFileFunc(self, FileName, pInfo):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+
+    def ReadFileFunc(self, FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, LPVOID, DWORD, LPDWORD, LONGLONG, PDOKAN_FILE_INFO)),
+
+    def WriteFileFunc(self, pInfo, a='', b='', c='', d='', e='', f='', g='', i='', j='', k=''):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, LPCVOID, DWORD, LPVOID, LONGLONG, PDOKAN_FILE_INFO)),
+
+    def FlushFileBuffersFunc(self, pInfo, a='', b='', c='', d='', e='', f='', g='', i='', j='', k=''):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+
+    def GetFileInformationFunc(self, FileName, Buffer, pInfo):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, LPBY_HANDLE_FILE_INFORMATION, PDOKAN_FILE_INFO)),
+
+    def FindFilesFunc(self, PathName, PFillFindData, pInfo):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)),
+
+    def FindFilesWithPatternFunc(self, PathName, SearchPattern, PFillFindData, pInfo):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)),
+
+    def SetFileAttributesFunc(self, pInfo, a='', b='', c='', d='', e='', f='', g='', i='', j='', k=''):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, DWORD, PDOKAN_FILE_INFO)),
+
+    def SetFileTimeFunc(self, pInfo, a='', b='', c='', d='', e='', f='', g='', i='', j='', k=''):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, POINTER(FILETIME), POINTER(FILETIME), POINTER(FILETIME), PDOKAN_FILE_INFO)),
+
+    def DeleteFileFunc(self, pInfo, a='', b='', c='', d='', e='', f='', g='', i='', j='', k=''):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+
+    def DeleteDirectoryFunc(self, pInfo, a='', b='', c='', d='', e='', f='', g='', i='', j='', k=''):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+
+    def MoveFileFunc(self, pInfo, a='', b='', c='', d='', e='', f='', g='', i='', j='', k=''):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, LPCWSTR, BOOL, PDOKAN_FILE_INFO)),
+
+    def SetEndOfFileFunc(self, FileName, offset, pInfo):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, PDOKAN_FILE_INFO)),
+
+    def SetAllocationSizeFunc(self, pInfo, a='', b='', c='', d='', e='', f='', g='', i='', j='', k=''):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, PDOKAN_FILE_INFO)),
+
+    def LockFileFunc(self, pInfo, a='', b='', c='', d='', e='', f='', g='', i='', j='', k=''):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),
+
+    def UnlockFileFunc(self, pInfo, a='', b='', c='', d='', e='', f='', g='', i='', j='', k=''):
+        return 0  # WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),
+
+    def GetDiskFreeSpaceFunc(self, FreeBytesAvailable, TotalNumberOfBytes, TotalNumberOfFreeBytes, pInfo):
+        return 0  # WINFUNCTYPE(c_int, PULONGLONG, PULONGLONG, PULONGLONG, PDOKAN_FILE_INFO)),
+
+    def GetVolumeInformationFunc(self, VolumeNameBuffer, VolumeNameSize, VolumeSerialNumber,
+                                 MaximumComponentLength, FileSystemFlags, FileSystemNameBuffer, FileSystemNameSize,
+                                 pInfo):
+        return 0  # WINFUNCTYPE(c_int, LPWSTR, DWORD, LPDWORD, LPDWORD, LPDWORD, LPWSTR, DWORD, PDOKAN_FILE_INFO)),
+
+    def UnmountFunc(self, pInfo, a='', b='', c='', d='', e='', f='', g='', i='', j='', k=''):
+        return 0  # WINFUNCTYPE(c_int, PDOKAN_FILE_INFO)),
+
+    def GetFileSecurityFunc(self, pInfo, a='', b='', c='', d='', e='', f='', g='', i='', j='', k=''):
+        return 0  # WINFUNCTYPE(c_int, PDOKAN_FILE_INFO)),
+
+    def SetFileSecurityFunc(self, pInfo, a='', b='', c='', d='', e='', f='', g='', i='', j='', k=''):
+        return 0  # WINFUNCTYPE(c_int, PDOKAN_FILE_INFO)),
 
     def main(self, args=None):
         if not self.fuse_args.mountpoint:
@@ -481,43 +514,52 @@ class fuseBase:
 
         print(windll.dokan)
         operation = _DOKAN_OPERATIONS(
-            CreateFileFuncType(self.CreateFileFunc),# WINFUNCTYPE(c_int, LPCWSTR, DWORD, DWORD, DWORD, DWORD, PDOKAN_FILE_INFO)),
-            OpenDirectoryFuncType(self.OpenDirectoryFunc),# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-            CreateDirectoryFuncType(self.CreateDirectoryFunc),# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-            CleanupFuncType(self.CleanupFunc),# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-            CloseFileFuncType(self.CloseFileFunc),# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-            ReadFileFuncType(self.ReadFileFunc),# WINFUNCTYPE(c_int, LPCWSTR, LPVOID, DWORD, LPDWORD, LONGLONG, PDOKAN_FILE_INFO)),
-            WriteFileFuncType(self.WriteFileFunc),# WINFUNCTYPE(c_int, LPCWSTR, LPCVOID, DWORD, LPVOID, LONGLONG, PDOKAN_FILE_INFO)),
-            FlushFileBuffersFuncType(self.FlushFileBuffersFunc),# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-            GetFileInformationFuncType(self.GetFileInformationFunc),# WINFUNCTYPE(c_int, LPCWSTR, LPBY_HANDLE_FILE_INFORMATION, PDOKAN_FILE_INFO)),
-            FindFilesFuncType(self.FindFilesFunc),# WINFUNCTYPE(c_int, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)),
-            FindFilesWithPatternFuncType(self.FindFilesWithPatternFunc),# WINFUNCTYPE(c_int, LPCWSTR, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)),
-            SetFileAttributesFuncType(self.SetFileAttributesFunc),# WINFUNCTYPE(c_int, LPCWSTR, DWORD, PDOKAN_FILE_INFO)),
-            SetFileTimeFuncType(self.SetFileTimeFunc),# WINFUNCTYPE(c_int, LPCWSTR, POINTER(FILETIME), POINTER(FILETIME), POINTER(FILETIME), PDOKAN_FILE_INFO)),
-            DeleteFileFuncType(self.DeleteFileFunc),# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-            DeleteDirectoryFuncType(self.DeleteDirectoryFunc),# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-            MoveFileFuncType(self.MoveFileFunc),# WINFUNCTYPE(c_int, LPCWSTR, LPCWSTR, BOOL, PDOKAN_FILE_INFO)),
-            SetEndOfFileFuncType(self.SetEndOfFileFunc),# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, PDOKAN_FILE_INFO)),
-            SetAllocationSizeFuncType(self.SetAllocationSizeFunc),# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, PDOKAN_FILE_INFO)),
-            LockFileFuncType(self.LockFileFunc),# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),
-            UnlockFileFuncType(self.UnlockFileFunc),# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),
-            GetDiskFreeSpaceFuncType(self.GetDiskFreeSpaceFunc),# WINFUNCTYPE(c_int, PULONGLONG, PULONGLONG, PULONGLONG, PDOKAN_FILE_INFO)),
-            GetVolumeInformationFuncType(self.GetVolumeInformationFunc),# WINFUNCTYPE(c_int, LPWSTR, DWORD, LPDWORD, LPDWORD, LPDWORD, LPWSTR, DWORD, PDOKAN_FILE_INFO)),
-            UnmountFuncType(self.UnmountFunc),# WINFUNCTYPE(c_int, PDOKAN_FILE_INFO)),
+            CreateFileFuncType(self.CreateFileFunc),
+            # WINFUNCTYPE(c_int, LPCWSTR, DWORD, DWORD, DWORD, DWORD, PDOKAN_FILE_INFO)),
+            OpenDirectoryFuncType(self.OpenDirectoryFunc),  # WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+            CreateDirectoryFuncType(self.CreateDirectoryFunc),  # WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+            CleanupFuncType(self.CleanupFunc),  # WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+            CloseFileFuncType(self.CloseFileFunc),  # WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+            ReadFileFuncType(self.ReadFileFunc),
+            # WINFUNCTYPE(c_int, LPCWSTR, LPVOID, DWORD, LPDWORD, LONGLONG, PDOKAN_FILE_INFO)),
+            WriteFileFuncType(self.WriteFileFunc),
+            # WINFUNCTYPE(c_int, LPCWSTR, LPCVOID, DWORD, LPVOID, LONGLONG, PDOKAN_FILE_INFO)),
+            FlushFileBuffersFuncType(self.FlushFileBuffersFunc),  # WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+            GetFileInformationFuncType(self.GetFileInformationFunc),
+            # WINFUNCTYPE(c_int, LPCWSTR, LPBY_HANDLE_FILE_INFORMATION, PDOKAN_FILE_INFO)),
+            FindFilesFuncType(self.FindFilesFunc),  # WINFUNCTYPE(c_int, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)),
+            FindFilesWithPatternFuncType(self.FindFilesWithPatternFunc),
+            # WINFUNCTYPE(c_int, LPCWSTR, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)),
+            SetFileAttributesFuncType(self.SetFileAttributesFunc),
+            # WINFUNCTYPE(c_int, LPCWSTR, DWORD, PDOKAN_FILE_INFO)),
+            SetFileTimeFuncType(self.SetFileTimeFunc),
+            # WINFUNCTYPE(c_int, LPCWSTR, POINTER(FILETIME), POINTER(FILETIME), POINTER(FILETIME), PDOKAN_FILE_INFO)),
+            DeleteFileFuncType(self.DeleteFileFunc),  # WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+            DeleteDirectoryFuncType(self.DeleteDirectoryFunc),  # WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
+            MoveFileFuncType(self.MoveFileFunc),  # WINFUNCTYPE(c_int, LPCWSTR, LPCWSTR, BOOL, PDOKAN_FILE_INFO)),
+            SetEndOfFileFuncType(self.SetEndOfFileFunc),  # WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, PDOKAN_FILE_INFO)),
+            SetAllocationSizeFuncType(self.SetAllocationSizeFunc),
+            # WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, PDOKAN_FILE_INFO)),
+            LockFileFuncType(self.LockFileFunc),  # WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),
+            UnlockFileFuncType(self.UnlockFileFunc),
+            # WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),
+            GetDiskFreeSpaceFuncType(self.GetDiskFreeSpaceFunc),
+            # WINFUNCTYPE(c_int, PULONGLONG, PULONGLONG, PULONGLONG, PDOKAN_FILE_INFO)),
+            GetVolumeInformationFuncType(self.GetVolumeInformationFunc),
+            # WINFUNCTYPE(c_int, LPWSTR, DWORD, LPDWORD, LPDWORD, LPDWORD, LPWSTR, DWORD, PDOKAN_FILE_INFO)),
+            UnmountFuncType(self.UnmountFunc),  # WINFUNCTYPE(c_int, PDOKAN_FILE_INFO)),
             GetFileSecurityFuncType(self.GetFileSecurityFunc),
             SetFileSecurityFuncType(self.SetFileSecurityFunc),
         )
         option = _DOKAN_OPTIONS(
-            600,#('Version', USHORT),
-            1,#('ThreadCount', USHORT),
-            0,#('Options', ULONG),
-            0,#('GlobalContext', ULONG64),
-            self.fuse_args.mountpoint,#('MountPoint', LPCWSTR),
+            600,  # ('Version', USHORT),
+            1,  # ('ThreadCount', USHORT),
+            0,  # ('Options', ULONG),
+            0,  # ('GlobalContext', ULONG64),
+            self.fuse_args.mountpoint,  # ('MountPoint', LPCWSTR),
         )
-        #from ctypesTest import *
-        #dumpMem(addressof(self.debug), 4)
-        #dumpMem(option, 15)
+        # from ctypesTest import *
+        # dumpMem(addressof(self.debug), 4)
+        # dumpMem(option, 15)
 
-        windll.dokan.DokanMain(byref(option),byref(operation))
-
-
+        windll.dokan.DokanMain(byref(option), byref(operation))
