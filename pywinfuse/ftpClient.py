@@ -25,13 +25,13 @@ from simpleFtpClient import *
 def getCacheInstance(server):
   try:
     from shove import Shove
-    print 'sqlite:///%s.sqlite'%server
+    print('sqlite:///%s.sqlite'%server)
     ftpCache = Shove('sqlite:///%s.sqlite'%server)
     #ftpCache = Shove()
-    print 'use shove'
+    print('use shove')
   except:
     ftpCache = {}
-    print 'use dict'
+    print('use dict')
   return ftpCache
 
 class ftpFs(Fuse):
@@ -49,7 +49,7 @@ class ftpFs(Fuse):
       #print 'get path attr', path
       st = MyStat()
       if path == '/':# or path == '.' or path == '..':
-        st.st_mode = stat.S_IFDIR | 0755
+        st.st_mode = stat.S_IFDIR | 0o755
         st.st_nlink = 2
         return st
       #print path
@@ -60,13 +60,13 @@ class ftpFs(Fuse):
           d = self.ftpCache[dirName]
           for i in d:
               if i[9] == filename:
-                  print i[9],i[1]
+                  print(i[9],i[1])
                   if i[1][0] == 'd':
-                      st.st_mode = stat.S_IFDIR | 0755
+                      st.st_mode = stat.S_IFDIR | 0o755
                       st.st_nlink = 2
                       return st
                   else:
-                      st.st_mode = stat.S_IFREG | 0444
+                      st.st_mode = stat.S_IFREG | 0o444
                       st.st_nlink = 1
                       st.st_size = int(i[5])
                       return st
@@ -105,17 +105,17 @@ class ftpFs(Fuse):
             #Didn't cached, download the remote file
             cached = self.cacheFile(path)
             self.cacheList[path] = cached
-            print 'caching file:%s'%path
+            print('caching file:%s'%path)
         else:
             cached = self.cacheList[path]
-            print 'can use cache:%s:'%cached
+            print('can use cache:%s:'%cached)
         f = open(cached,'rb')
         f.seek(offset)
         buf = f.read(size)
         f.close()
         #print 'read len:', len(buf)
         return buf
-        
+
     def cacheFile(self, path):
         #Generate local file path
         cached = self.getPath(str(uuid.uuid4()))
@@ -123,7 +123,7 @@ class ftpFs(Fuse):
         self.client.get(path, wf)##########################################Reading ftp server
         wf.close()
         return cached
-        
+
 def main():
     #server = ftpFs(user='wwj',passwd='wwj')
     import sys

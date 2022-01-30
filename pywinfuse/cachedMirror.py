@@ -24,35 +24,35 @@ class MyStat(fuse.Stat):
 def getCacheInstance(server = 'dirCache'):
   try:
     from shove import Shove
-    print 'sqlite:///%s.sqlite'%server
-    dirCache = Shove('sqlite:///%s.sqlite'%server)
+    print('sqlite:///%s.sqlite'%server)
+    dir_cache = Shove('sqlite:///%s.sqlite'%server)
     #ftpCache = Shove()
-    print 'use shove'
-  except:
-    dirCache = {}
-    print 'use dict'
-  return dirCache
+    print('use shove')
+  except Exception as e:
+    dir_cache = {}
+    print('use dict')
+  return dir_cache
 
 
 class cachedMirrorFs(Fuse):
-    def __init__(self, rootDir = 'd:/'):
+    def __init__(self, rootDir='c:/'):
       self.dirCache = getCacheInstance()
       self.baseFilesys = rootDir
       Fuse.__init__(self)
-    def getPath(self, path):
+    def get_path(self, path):
       #print 'get path', path
-      realP = self.baseFilesys + path
+      real_path = self.baseFilesys + path
       #print realP
-      return realP
+      return real_path
     def getattr(self, path):
       #print 'get path attr', path
       st = MyStat()
       if path == '/':# or path == '.' or path == '..':
-        st.st_mode = stat.S_IFDIR | 0755
+        st.st_mode = stat.S_IFDIR | 0o755
         st.st_nlink = 2
         return st
       try:
-        return os.stat(self.getPath(path))
+        return os.stat(self.get_path(path))
       except:
         #print 'no stat', self.getPath(path)
         return -errno.ENOENT
@@ -67,13 +67,13 @@ class cachedMirrorFs(Fuse):
             for r in cachedDir:
                 #print r
                 yield fuse.Direntry(r)
-            print 'cached dir info'
+            print('cached dir info')
         except KeyError:
             self.dirCache[path] = []
-            for r in os.listdir(self.getPath(path)):
+            for r in os.listdir(self.get_path(path)):
                 self.dirCache[path].append(r)
                 yield fuse.Direntry(r)
-            print 'real dir info'
+            print('real dir info')
 
     def open(self, path, flags):
         #print 'calling open'
@@ -87,7 +87,7 @@ class cachedMirrorFs(Fuse):
         if self.getattr(path) == -errno.ENOENT:
             return -errno.ENOENT
         #print 'open file:',self.getPath(path)
-        f = open(self.getPath(path),'rb')
+        f = open(self.get_path(path), 'rb')
         f.seek(offset)
         buf = f.read(size)
         f.close()

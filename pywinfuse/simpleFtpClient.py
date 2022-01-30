@@ -25,13 +25,13 @@ class simpleFtpClient:
     def gotoDir(self, dirPath):
         self.pwd = dirPath
         self.ftp.cwd(dirPath)
-        
+
     def dirCallback(self, line):
         #print line
         o = []
         m = dirPattern.match(line)
         if m == None:
-            print 'no dir in this line'
+            print('no dir in this line')
         else:
             for i in range(0, 10):
                 o.append(m.group(i))
@@ -48,7 +48,7 @@ class simpleFtpClient:
         self.ftp.login(self.user, self.passwd)
         self.gotoDir(self.pwd)
         self.loginFlag = True
-        
+
     def get(self, filePath, targetFile):
         self.login()
         #Change all '\\' to '/'
@@ -71,12 +71,12 @@ def main():
     hi = simpleFtpClient('localhost', 'wwj','wwj')
     i = hi.getDir('/')
     for m in i:
-      print m
+      print(m)
     #import uuid
     #cached = 'd:/tmp'+'/'+str(uuid.uuid4())
     #wf = open(cached, 'wb')
     #hi.get('/BPP_spel.log', wf)
     #wf.close()
-    
+
 if __name__ == '__main__':
     main()

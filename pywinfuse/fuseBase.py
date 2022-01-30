@@ -246,7 +246,7 @@ class FuseOptParse(SubbedOptParse):
 
         if dsd == 'whine':
             def dsdcb(option, opt_str, value, parser):
-                raise RuntimeError, """
+                raise RuntimeError("""
 
 ! If you want the "-s" option to work, pass
 !
@@ -254,7 +254,7 @@ class FuseOptParse(SubbedOptParse):
 !
 ! to the Fuse constructor. See docstring of the FuseOptParse class for an
 ! explanation why is it not set by default.
-"""
+""")
 
         elif dsd == 'setsingle':
             def dsdcb(option, opt_str, value, parser):
@@ -263,7 +263,7 @@ class FuseOptParse(SubbedOptParse):
         elif dsd == 'undef':
             dsdcb = None
         else:
-            raise ArgumentError, "key `dash_s_do': uninterpreted value " + str(dsd)
+            raise ArgumentError("key `dash_s_do': uninterpreted value " + str(dsd))
 
         if dsdcb:
             self.add_option('-s', action='callback', callback=dsdcb,
@@ -276,7 +276,7 @@ class FuseOptParse(SubbedOptParse):
 
     def error(self, msg):
         SubbedOptParse.error(self, msg)
-        raise OptParseError, msg
+        raise OptParseError(msg)
 
     def print_help(self, file=sys.stderr):
         SubbedOptParse.print_help(self, file)
@@ -319,7 +319,7 @@ class fuseOptDict:
         pass
     def copy(self):
         pass
-        
+
 fuse_python_api = None
 
 class fuseBase:
@@ -346,7 +346,7 @@ class fuseBase:
 
         ev = 'errex' in kw and kw.pop('errex')
         if ev and not isinstance(ev, int):
-            raise TypeError, "error exit value should be an integer"
+            raise TypeError("error exit value should be an integer")
 
         try:
             self.cmdline = self.parser.parse_args(*args, **kw)
@@ -360,7 +360,7 @@ class fuseBase:
     def GetContext(self):
         # os.lstat always return 0 as uid and gid on windows.
         return { 'pid' : os.getpid(), 'uid' : 0, 'gid' : 0 }
-        
+
     '''
     The following functions are used to be compatible,
     with Linux Fuse Python file class feature.
@@ -376,8 +376,8 @@ class fuseBase:
                 flags = flags & (~os.O_CREAT)
                 pInfo.contents.Context = flags
 
-            except Exception, e:
-                print e
+            except Exception as e:
+                print(e)
 
             return 0
 
@@ -385,34 +385,34 @@ class fuseBase:
             return self.open(path, flags)
 
     def read_wrapper(self, path, length, offset, pInfo):
-        if self.file_class_instances.has_key(pInfo.contents.DokanContext):
+        if pInfo.contents.DokanContext in self.file_class_instances:
             return self.file_class_instances[pInfo.contents.DokanContext].read(length, offset)
 
         elif not self.file_class:
             return self.read(path, length, offset)
 
     def write_wrapper(self, path, new_data, offset, pInfo):
-        if self.file_class_instances.has_key(pInfo.contents.DokanContext):
+        if pInfo.contents.DokanContext in self.file_class_instances:
             return self.file_class_instances[pInfo.contents.DokanContext].write(new_data, offset)
 
         elif not self.file_class:
             return self.write(path, new_data, offset)
 
     def ftruncate_wrapper(self, path, offset, pInfo):
-        if self.file_class_instances.has_key(pInfo.contents.DokanContext):
+        if pInfo.contents.DokanContext in self.file_class_instances:
             return self.file_class_instances[pInfo.contents.DokanContext].ftruncate(offset)
 
         elif not self.file_class:
             return self.ftruncate(path, offset)
 
     def release_wrapper(self, path, pInfo):
-        if self.file_class_instances.has_key(pInfo.contents.DokanContext):
+        if pInfo.contents.DokanContext in self.file_class_instances:
             try:
                 self.file_class_instances[pInfo.contents.DokanContext].release(pInfo.contents.Context)
                 del self.file_class_instances[pInfo.contents.DokanContext]
 
-            except Exception, e:
-                print e
+            except Exception as e:
+                print(e)
 
             return 0
 
@@ -434,9 +434,9 @@ class fuseBase:
         return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
     def ReadFileFunc(self, FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, LPVOID, DWORD, LPDWORD, LONGLONG, PDOKAN_FILE_INFO)),
-    def WriteFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
+    def WriteFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, LPCVOID, DWORD, LPVOID, LONGLONG, PDOKAN_FILE_INFO)),
-    def FlushFileBuffersFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
+    def FlushFileBuffersFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
     def GetFileInformationFunc(self, FileName, Buffer, pInfo):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, LPBY_HANDLE_FILE_INFORMATION, PDOKAN_FILE_INFO)),
@@ -444,34 +444,34 @@ class fuseBase:
         return 0# WINFUNCTYPE(c_int, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)),
     def FindFilesWithPatternFunc(self, PathName, SearchPattern, PFillFindData, pInfo):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, PFillFindData, PDOKAN_FILE_INFO)),
-    def SetFileAttributesFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
+    def SetFileAttributesFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, DWORD, PDOKAN_FILE_INFO)),
-    def SetFileTimeFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
+    def SetFileTimeFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, POINTER(FILETIME), POINTER(FILETIME), POINTER(FILETIME), PDOKAN_FILE_INFO)),
-    def DeleteFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
+    def DeleteFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-    def DeleteDirectoryFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
+    def DeleteDirectoryFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
-    def MoveFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
+    def MoveFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, LPCWSTR, BOOL, PDOKAN_FILE_INFO)),
     def SetEndOfFileFunc(self, FileName, offset, pInfo):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, PDOKAN_FILE_INFO)),
-    def SetAllocationSizeFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
+    def SetAllocationSizeFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, PDOKAN_FILE_INFO)),
-    def LockFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
+    def LockFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),
-    def UnlockFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
+    def UnlockFileFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
         return 0# WINFUNCTYPE(c_int, LPCWSTR, LONGLONG, LONGLONG, PDOKAN_FILE_INFO)),
     def GetDiskFreeSpaceFunc(self, FreeBytesAvailable, TotalNumberOfBytes, TotalNumberOfFreeBytes, pInfo):
         return 0# WINFUNCTYPE(c_int, PULONGLONG, PULONGLONG, PULONGLONG, PDOKAN_FILE_INFO)),
-    def GetVolumeInformationFunc(self, VolumeNameBuffer, VolumeNameSize, VolumeSerialNumber, 
+    def GetVolumeInformationFunc(self, VolumeNameBuffer, VolumeNameSize, VolumeSerialNumber,
             MaximumComponentLength, FileSystemFlags, FileSystemNameBuffer, FileSystemNameSize, pInfo):
         return 0# WINFUNCTYPE(c_int, LPWSTR, DWORD, LPDWORD, LPDWORD, LPDWORD, LPWSTR, DWORD, PDOKAN_FILE_INFO)),
-    def UnmountFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
+    def UnmountFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
         return 0# WINFUNCTYPE(c_int, PDOKAN_FILE_INFO)),
-    def GetFileSecurityFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
+    def GetFileSecurityFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
         return 0# WINFUNCTYPE(c_int, PDOKAN_FILE_INFO)),
-    def SetFileSecurityFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''): 
+    def SetFileSecurityFunc(self, pInfo, a='',b='',c='',d='',e='',f='',g='',i='',j='',k=''):
         return 0# WINFUNCTYPE(c_int, PDOKAN_FILE_INFO)),
 
 
@@ -479,7 +479,7 @@ class fuseBase:
         if not self.fuse_args.mountpoint:
             self.fuse_args.mountpoint = u"K"
 
-        print windll.dokan
+        print(windll.dokan)
         operation = _DOKAN_OPERATIONS(
             CreateFileFuncType(self.CreateFileFunc),# WINFUNCTYPE(c_int, LPCWSTR, DWORD, DWORD, DWORD, DWORD, PDOKAN_FILE_INFO)),
             OpenDirectoryFuncType(self.OpenDirectoryFunc),# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO)),
@@ -517,7 +517,7 @@ class fuseBase:
         #from ctypesTest import *
         #dumpMem(addressof(self.debug), 4)
         #dumpMem(option, 15)
-        
+
         windll.dokan.DokanMain(byref(option),byref(operation))
 
 

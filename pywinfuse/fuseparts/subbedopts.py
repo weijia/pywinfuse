@@ -35,7 +35,7 @@ class SubOptsHive(object):
 
         ra = (list(self.optlist) + sa) or ["(none)"]
         ra.sort()
-        return ra 
+        return ra
 
     def __str__(self):
         return "< opts: " + ", ".join(self._str_core()) + " >"
@@ -84,7 +84,7 @@ class SubOptsHive(object):
 
         if (v):
             if val != None:
-                raise AttributeError, "ambiguous option value"
+                raise AttributeError("ambiguous option value")
             val = v
 
         if val == False:

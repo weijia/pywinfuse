@@ -6,12 +6,12 @@ import ctypes
 
 class unlinkSupport:
   def unlink(self, path):
-    print '*** unlink', path
+    print('*** unlink', path)
     return -errno.ENOSYS
   def rmdir(self, path):
-    print '*** rmdir', path
+    print('*** rmdir', path)
     return -errno.ENOSYS
-    
+
   def DeleteFileFunc(self, FileName, pInfo):# WINFUNCTYPE(c_int, LPCWSTR, PDOKAN_FILE_INFO))
     unixFilename = self.translateFileName(FileName)
     st = self.getattrWrapper(unixFilename)
@@ -20,11 +20,11 @@ class unlinkSupport:
         #Is DIR rmdir
         return self.checkError(self.rmdir(unixFilename))
       else:
-        print 'removing:',unixFilename
+        print('removing:',unixFilename)
         return self.checkError(self.unlink(unixFilename))
     return -myWin32file.ERROR_FILE_NOT_FOUND
 
-  def DeleteDirectoryFunc(self, FileName, pInfo): 
+  def DeleteDirectoryFunc(self, FileName, pInfo):
     #dbg()
     unixFilename = self.translateFileName(FileName)
     cl('Filename:', unixFilename)
@@ -33,14 +33,14 @@ class unlinkSupport:
 
 class writeSupport:
   def write(self, path, buf, offset):
-    print '*** write', path, buf, offset
+    print('*** write', path, buf, offset)
     return -errno.ENOSYS
 
   def ftruncate(self, path, offset):
-    print '*** truncate', path, offset
+    print('*** truncate', path, offset)
     return -errno.ENOSYS
 
-  def WriteFileFunc(self, FileName, Buffer, NumberOfBytesToWrite, NumberOfBytesWritten, Offset, pInfo): 
+  def WriteFileFunc(self, FileName, Buffer, NumberOfBytesToWrite, NumberOfBytesWritten, Offset, pInfo):
     #dbg()
     unixFilename = self.translateFileName(FileName)
     realBuf = ctypes.string_at(Buffer, NumberOfBytesToWrite)

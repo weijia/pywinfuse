@@ -7,6 +7,7 @@
 #
 
 import os, stat, errno
+
 # pull in some spaghetti to make this stuff work without fuse-py being installed
 try:
     import _find_fuse_parts
@@ -15,15 +16,14 @@ except ImportError:
 import fuse
 from fuse import Fuse
 
-
 if not hasattr(fuse, '__version__'):
-    raise RuntimeError, \
-        "your fuse-py doesn't know of fuse.__version__, probably it's too old."
+    raise RuntimeError("your fuse-py doesn't know of fuse.__version__, probably it's too old.")
 
 fuse.fuse_python_api = (0, 2)
 
 hello_path = '/hello.txt'
-hello_str = 'Hello World!\n'
+hello_str = 'Hello World!\n'.encode('utf8')
+
 
 class MyStat(fuse.Stat):
     def __init__(self):
@@ -38,15 +38,16 @@ class MyStat(fuse.Stat):
         self.st_mtime = 0
         self.st_ctime = 0
 
+
 class HelloFS(Fuse):
 
     def getattr(self, path):
         st = MyStat()
         if path == '/':
-            st.st_mode = stat.S_IFDIR | 0755
+            st.st_mode = stat.S_IFDIR | 0o755
             st.st_nlink = 2
         elif path == hello_path:
-            st.st_mode = stat.S_IFREG | 0444
+            st.st_mode = stat.S_IFREG | 0o444
             st.st_nlink = 1
             st.st_size = len(hello_str)
         else:
@@ -54,10 +55,11 @@ class HelloFS(Fuse):
         return st
 
     def readdir(self, path, offset):
-        for r in  '.', '..', hello_path[1:]:
+        for r in '.', '..', hello_path[1:]:
             yield fuse.Direntry(r)
 
     def open(self, path, flags):
+        print(path, flags)
         if path != hello_path:
             return -errno.ENOENT
         accmode = os.O_RDONLY | os.O_WRONLY | os.O_RDWR
@@ -71,13 +73,14 @@ class HelloFS(Fuse):
         if offset < slen:
             if offset + size > slen:
                 size = slen - offset
-            buf = hello_str[offset:offset+size]
+            buf = hello_str[offset:offset + size]
         else:
             buf = ''
         return buf
 
+
 def main():
-    usage="""
+    usage = """
 Userspace hello example
 
 """ + Fuse.fusage
@@ -87,6 +90,7 @@ Userspace hello example
 
     server.parse(errex=1)
     server.main()
+
 
 if __name__ == '__main__':
     main()
