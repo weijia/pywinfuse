@@ -84,7 +84,7 @@ class Fuse(openSupport, unlinkSupport, writeSupport, fuseBase):
 
     def ReadFileFunc(self, FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo):
         # print("ReadFileFunc")
-        dbgP(FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo)
+        # dbgP(FileName, Buffer, NumberOfBytesToRead, NumberOfBytesRead, Offset, pInfo)
         # Why the directory is read?
         # Todo: find why, now, check if it is dir first
         unixFilename = FileName.replace('\\', '/')

@@ -11,6 +11,7 @@ import os
 import stat
 from mirror import MirrorFs
 from itertools import cycle
+from fuse import Stat
 
 # pull in some spaghetti to make this stuff work without fuse-py being installed
 try:
@@ -34,8 +35,23 @@ class WeChatMirrorFs(MirrorFs):
     def translate_path(self, path):
         # print 'get path', path
         real_path = os.path.join(self.BASE_PATH, path)
+        if self.is_wechat_image(path):
+            real_path = real_path.replace(".jpg", "")
         # print real_path
         return real_path
+
+    def getattr(self, path):
+        # print 'get path attr', path
+        st = Stat()
+        if path == '/':  # or path == '.' or path == '..':
+            st.st_mode = stat.S_IFDIR | 0o755
+            st.st_nlink = 2
+            return st
+        try:
+            return os.stat(self.translate_path(path))
+        except:
+            # print('no stat', self.translate_path(path))
+            return -errno.ENOENT
 
     def readdir(self, path, offset):
         # yield fuse.Direntry('a.txt')
@@ -43,7 +59,11 @@ class WeChatMirrorFs(MirrorFs):
             yield fuse.Direntry(r)
         for r in os.listdir(self.translate_path(path)):
             # print("listing:", path)
-            yield fuse.Direntry(r)
+            if self.is_wechat_image(path) and not path.endswith("Image"):
+                # print(r+".jpg")
+                yield fuse.Direntry(r+".jpg")
+            else:
+                yield fuse.Direntry(r)
 
     def open(self, path, flags):
         # print('calling open')
@@ -67,7 +87,7 @@ class WeChatMirrorFs(MirrorFs):
         f.seek(offset)
         buf = f.read(size)
         if self.is_wechat_image(path):
-            print(type(buf), len(buf))
+            # print(type(buf), len(buf))
             buf = bytes(a ^ b for a, b in zip(buf, cycle([self.DECRYPT_KEY])))
             # print(type(bufx), len(bufx))
         f.close()
